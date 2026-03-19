@@ -1,4 +1,4 @@
-![Team Logo](satellite-crop-advisory/logo/masy_crop.png)
+![Team Logo](satellite-crop-advisory/logo/masy_crop.jpg)
 
 # Group Name : MASY Crops 🌾
 Team Members :
