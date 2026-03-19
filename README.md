@@ -1,3 +1,5 @@
+![Team Logo](satellite-crop-advisory/logo/masy_crop.png)
+
 # Group Name : MASY Crops 🌾
 Team Members :
  - Yazdan Irfan
