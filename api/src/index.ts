@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import pool from "./db.js";
 
 dotenv.config();
 
@@ -16,6 +17,35 @@ app.get("/health", (_req, res) => {
     status: "ok",
     timestamp: new Date().toISOString()
   });
+});
+
+app.get("/regions", async (_req, res) => {
+  try {
+    const query = `
+      SELECT jsonb_build_object(
+        'type', 'FeatureCollection',
+        'features', COALESCE(jsonb_agg(
+          jsonb_build_object(
+            'type', 'Feature',
+            'geometry', ST_AsGeoJSON(geom)::jsonb,
+            'properties', jsonb_build_object(
+              'id', id,
+              'name', name
+            )
+          )
+        ), '[]'::jsonb)
+      ) AS geojson
+      FROM regions;
+    `;
+
+    const result = await pool.query(query);
+    res.json(result.rows[0].geojson);
+  } catch (error) {
+    console.error("Failed to fetch regions:", error);
+    res.status(500).json({
+      error: "Failed to fetch regions"
+    });
+  }
 });
 
 app.listen(port, () => {
