@@ -27,7 +27,7 @@ This project focuses on designing and enhancing an intelligent pipeline that tra
 
 ## Day 1 Progress
 - [x] Task 1: repo skeleton + base docs
-- [ ] Task 2: local infra (PostGIS + Mongo)
+- [x] Task 2: local infra (PostGIS + Mongo)
 - [ ] Task 3: spatial schema + region seed
 - [ ] Task 4: API health endpoint
 - [ ] Task 5: regions endpoint
@@ -37,5 +37,14 @@ This project focuses on designing and enhancing an intelligent pipeline that tra
 - `PostGIS`: stores region boundaries and supports geospatial queries.
 - `MongoDB`: stores ingestion job logs, pipeline status, and flexible metadata.
 
-## Next Step
-Set up local infrastructure using Docker Compose for PostGIS and MongoDB.
+## Local Infrastructure
+Use Docker Compose to run databases:
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+Services:
+- PostGIS on `localhost:5432`
+- MongoDB on `localhost:27017`
