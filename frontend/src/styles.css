@@ -1,0 +1,54 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: #334155;
+}
+
+.main {
+  padding: 12px;
+  flex: 1;
+}
+
+.status {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.map {
+  width: 100%;
+  height: calc(100vh - 110px);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
