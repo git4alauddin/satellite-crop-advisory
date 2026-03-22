@@ -28,7 +28,7 @@ This project focuses on designing and enhancing an intelligent pipeline that tra
 ## Day 1 Progress
 - [x] Task 1: repo skeleton + base docs
 - [x] Task 2: local infra (PostGIS + Mongo)
-- [ ] Task 3: spatial schema + region seed
+- [x] Task 3: spatial schema + region seed
 - [ ] Task 4: API health endpoint
 - [ ] Task 5: regions endpoint
 - [ ] Task 6: frontend map integration
@@ -48,3 +48,17 @@ docker compose ps
 Services:
 - PostGIS on `localhost:5432`
 - MongoDB on `localhost:27017`
+
+## Initialize Spatial DB (Reproducible)
+Run schema and seed scripts from repo root:
+
+```bash
+Get-Content -Raw .\db\init\001_regions_schema.sql | docker exec -i sca_postgis psql -U sca_user -d sca_geo
+Get-Content -Raw .\db\init\002_regions_seed.sql | docker exec -i sca_postgis psql -U sca_user -d sca_geo
+```
+
+Optional verification:
+
+```bash
+docker exec -it sca_postgis psql -U sca_user -d sca_geo -c "SELECT id, name, ST_AsText(geom) FROM regions;"
+```
