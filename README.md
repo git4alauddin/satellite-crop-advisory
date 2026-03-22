@@ -16,3 +16,26 @@ This project focuses on designing and enhancing an intelligent pipeline that tra
 - Compute vegetation indices (NDVI, NDWI, LST)
 - Analyze temporal trends
 - Provide simple, interpretable advisories
+
+## Progress
+
+## Services (Planned Architecture)
+- `frontend`: dashboard UI (map, trends, alerts)
+- `api`: backend endpoints for data access
+- `processor`: satellite processing and index computation jobs
+- `data`: PostGIS (spatial analytics) + MongoDB (job/metadata logs)
+
+## Day 1 Progress
+- [x] Task 1: repo skeleton + base docs
+- [ ] Task 2: local infra (PostGIS + Mongo)
+- [ ] Task 3: spatial schema + region seed
+- [ ] Task 4: API health endpoint
+- [ ] Task 5: regions endpoint
+- [ ] Task 6: frontend map integration
+
+## Why PostGIS + Mongo
+- `PostGIS`: stores region boundaries and supports geospatial queries.
+- `MongoDB`: stores ingestion job logs, pipeline status, and flexible metadata.
+
+## Next Step
+Set up local infrastructure using Docker Compose for PostGIS and MongoDB.
