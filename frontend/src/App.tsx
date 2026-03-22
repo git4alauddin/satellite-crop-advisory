@@ -36,8 +36,8 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>Satellite Crop Advisory</h1>
-        <p>Day 1 Task 6: Region map from live API</p>
+        <h1>Satellite Crop Health Advisory</h1>
+        <p>Live district-level crop region view</p>
       </header>
 
       <main className="main">
