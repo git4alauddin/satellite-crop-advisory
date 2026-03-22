@@ -29,7 +29,7 @@ This project focuses on designing and enhancing an intelligent pipeline that tra
 - [x] Task 1: repo skeleton + base docs
 - [x] Task 2: local infra (PostGIS + Mongo)
 - [x] Task 3: spatial schema + region seed
-- [ ] Task 4: API health endpoint
+- [x] Task 4: API health endpoint
 - [ ] Task 5: regions endpoint
 - [ ] Task 6: frontend map integration
 
