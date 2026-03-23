@@ -62,5 +62,27 @@ The project develops a Satellite-Based Crop Health and Resource Advisory System 
 - Regions GeoJSON: `http://localhost:4000/regions`
 - Frontend UI: `http://localhost:5173`
 
+
+## Phase 2 Progress
+- [x] Task 1: processor bootstrap (`/health`, `/jobs/ndvi` stub)
+- [ ] Task 2: GEE authentication setup
+- [ ] Task 3: Sentinel-2 fetch + cloud mask + NDVI compute
+- [ ] Task 4: store NDVI outputs in DB
+- [ ] Task 5: NDVI trends API endpoint
+- [ ] Task 6: frontend NDVI trend visualization
+
+## Processor Service (Bootstrap)
+Run processor locally:
+
+```bash
+cd processor
+pip install -r requirements.txt
+uvicorn src.main:app --reload --port 8000
+```
+
+Quick checks:
+- `GET http://localhost:8000/health`
+- `POST http://localhost:8000/jobs/ndvi` (stub)
+
 ## Next Step (Phase 2)
 Implement GEE-based ingestion and NDVI weekly processing pipeline into the existing data model.
