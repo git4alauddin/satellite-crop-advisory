@@ -68,7 +68,7 @@ The project develops a Satellite-Based Crop Health and Resource Advisory System 
 - [x] Task 2: GEE authentication setup
 - [x] Task 3: Sentinel-2 fetch + cloud mask + NDVI compute
 - [x] Task 4: store NDVI outputs in DB
-- [ ] Task 5: NDVI trends API endpoint
+- [x] Task 5: NDVI trends API endpoint
 - [ ] Task 6: frontend NDVI trend visualization
 
 ## Processor Service (Bootstrap)
@@ -87,4 +87,4 @@ Quick checks:
 - `GET http://localhost:8000/stats/ndvi?region_id=1` (persisted NDVI stats)
 
 ## Next Step (Phase 2)
-Implement NDVI trends API in the `api` service and connect frontend trend visualization.
+Connect frontend NDVI trend visualization to `GET /trends/ndvi`.
