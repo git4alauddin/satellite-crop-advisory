@@ -65,7 +65,7 @@ The project develops a Satellite-Based Crop Health and Resource Advisory System 
 
 ## Phase 2 Progress
 - [x] Task 1: processor bootstrap (`/health`, `/jobs/ndvi` stub)
-- [ ] Task 2: GEE authentication setup
+- [x] Task 2: GEE authentication setup
 - [ ] Task 3: Sentinel-2 fetch + cloud mask + NDVI compute
 - [ ] Task 4: store NDVI outputs in DB
 - [ ] Task 5: NDVI trends API endpoint
