@@ -69,22 +69,46 @@ The project develops a Satellite-Based Crop Health and Resource Advisory System 
 - [x] Task 3: Sentinel-2 fetch + cloud mask + NDVI compute
 - [x] Task 4: store NDVI outputs in DB
 - [x] Task 5: NDVI trends API endpoint
-- [ ] Task 6: frontend NDVI trend visualization
+- [x] Task 6: frontend NDVI trend visualization
 
-## Processor Service (Bootstrap)
-Run processor locally:
+## Phase 2 Outcome
+- Earth Engine authentication configured with project context
+- Sentinel-2 NDVI pipeline implemented (date + region filters, cloud masking, NDVI compute)
+- Async NDVI job execution added (`POST /jobs/ndvi`) with polling (`GET /jobs/ndvi/{job_id}`)
+- NDVI outputs persisted in `index_stats` table
+- Processor stats endpoint added (`GET /stats/ndvi?region_id=...`)
+- API trends endpoint added (`GET /trends/ndvi`)
+- Frontend NDVI trend visualization integrated (summary + table)
 
-```bash
-cd processor
-pip install -r requirements.txt
-uvicorn src.main:app --reload --port 8000
-```
+## Run (Phase 2)
+1. Start PostGIS:
+   - `docker compose up -d postgis`
+2. Start processor:
+   - `cd processor`
+   - `pip install -r requirements.txt`
+   - `uvicorn src.main:app --reload --port 8000`
+3. Submit NDVI job:
+   - `POST http://localhost:8000/jobs/ndvi`
+4. Poll status:
+   - `GET http://localhost:8000/jobs/ndvi/{job_id}`
+5. Check persisted stats:
+   - `GET http://localhost:8000/stats/ndvi?region_id=1`
+6. Start API:
+   - `cd api`
+   - `npm install`
+   - `npm run dev`
+7. Check trends API:
+   - `GET http://localhost:4000/trends/ndvi?regionId=1&from=2025-01-01&to=2025-12-31`
+8. Start frontend:
+   - `cd frontend`
+   - `npm install`
+   - `npm run dev`
 
-Quick checks:
-- `GET http://localhost:8000/health`
-- `POST http://localhost:8000/jobs/ndvi` (returns `job_id`)
-- `GET http://localhost:8000/jobs/ndvi/{job_id}` (job status/result)
-- `GET http://localhost:8000/stats/ndvi?region_id=1` (persisted NDVI stats)
+## Verify (Phase 2)
+- NDVI job returns `job_id` and reaches `completed`
+- `index_stats` table contains NDVI row(s) for selected region/date window
+- `/trends/ndvi` returns ordered NDVI time-series
+- Frontend dashboard shows NDVI summary + trend table
 
-## Next Step (Phase 2)
-Connect frontend NDVI trend visualization to `GET /trends/ndvi`.
+## Next Step (Phase 3)
+Phase 2 complete. Next: extend pipeline for NDWI/LST and anomaly-based alerts.

@@ -52,3 +52,72 @@ body {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
 }
+
+.trendCard {
+  margin-top: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.trendCard h2 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.trendSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.trendSummary div {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+.label {
+  display: block;
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.muted {
+  color: #64748b;
+}
+
+.error {
+  color: #b91c1c;
+}
+
+.trendTableWrap {
+  overflow-x: auto;
+}
+
+.trendTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trendTable th,
+.trendTable td {
+  border: 1px solid #e2e8f0;
+  padding: 8px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.trendTable th {
+  background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .trendSummary {
+    grid-template-columns: 1fr;
+  }
+}
