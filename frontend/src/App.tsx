@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { GeoJSON, MapContainer, TileLayer } from "react-leaflet";
+import { GeoJSON, MapContainer, TileLayer, useMap } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
+import L from "leaflet";
 import {
   CartesianGrid,
   Legend,
@@ -35,9 +36,26 @@ import {
   type RegionFeatureCollection
 } from "./api";
 
-const defaultCenter: LatLngExpression = [28.61, 77.16];
+const defaultCenter: LatLngExpression = [30.9, 75.85];
 const DEFAULT_RANGE_FROM = "2025-01-01";
 const DEFAULT_RANGE_TO = "2025-02-15";
+type DetailsTab = "combined" | "ndvi" | "ndwi" | "lst" | "alerts";
+
+function FitToRegions({ regions }: { regions: RegionFeatureCollection | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!regions || regions.features.length === 0) return;
+
+    const layer = L.geoJSON(regions as unknown as GeoJSON.GeoJsonObject);
+    const bounds = layer.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [20, 20], maxZoom: 11 });
+    }
+  }, [map, regions]);
+
+  return null;
+}
 
 export default function App() {
   const [regions, setRegions] = useState<RegionFeatureCollection | null>(null);
@@ -71,6 +89,7 @@ export default function App() {
   const [rangeError, setRangeError] = useState<string | null>(null);
   const [clearingCard, setClearingCard] = useState<"ndvi" | "ndwi" | "lst" | "alerts" | null>(null);
   const [refreshingAll, setRefreshingAll] = useState(false);
+  const [detailsTab, setDetailsTab] = useState<DetailsTab>("combined");
 
   async function loadMapData() {
     try {
@@ -315,6 +334,9 @@ export default function App() {
   const latestTrend = trendData.length > 0 ? trendData[trendData.length - 1] : null;
   const latestNdwi = ndwiData.length > 0 ? ndwiData[ndwiData.length - 1] : null;
   const latestLst = lstData.length > 0 ? lstData[lstData.length - 1] : null;
+  const boundarySource = regions?.features?.[0]?.properties?.source ?? "N/A";
+  const boundaryCode = regions?.features?.[0]?.properties?.region_code ?? "N/A";
+
   const chartData = useMemo(() => {
     const end = new Date(dateTo);
     if (Number.isNaN(end.getTime())) return [];
@@ -349,12 +371,54 @@ export default function App() {
         <p>Live district-level crop region view</p>
       </header>
 
-      <main className="main">
-        {mapMessage ? (
-          <div className="status">{mapMessage}</div>
-        ) : (
-          <>
-            <div className="mapControls">
+      <main className="main dashboardMain">
+        <section className="trendCard controlBar">
+          <div className="controlsGrid">
+            <div className="controlBlock">
+              <span className="label">Date Window</span>
+              <div className="dateControls">
+                <label>
+                  From
+                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                </label>
+                <label>
+                  To
+                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                </label>
+                <button type="button" onClick={() => void refreshStatsAndAlerts()} disabled={refreshingAll}>
+                  {refreshingAll ? "Refreshing..." : "Refresh Window"}
+                </button>
+              </div>
+            </div>
+
+            <div className="controlBlock">
+              <span className="label">Run Jobs</span>
+              <div className="jobActions">
+                <button
+                  type="button"
+                  onClick={() => void runJob("ndvi")}
+                  disabled={jobRunning !== null || !!rangeError || refreshingAll}
+                >
+                  Run NDVI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void runJob("ndwi")}
+                  disabled={jobRunning !== null || !!rangeError || refreshingAll}
+                >
+                  Run NDWI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void runJob("lst")}
+                  disabled={jobRunning !== null || !!rangeError || refreshingAll}
+                >
+                  Run LST
+                </button>
+              </div>
+            </div>
+
+            <div className="controlBlock">
               <span className="label">Map Layer</span>
               <div className="layerButtons">
                 <button
@@ -383,113 +447,106 @@ export default function App() {
                 </button>
               </div>
             </div>
+          </div>
+          {rangeError && <p className="error">{rangeError}</p>}
+          {jobMessage && <p className="muted">{jobMessage}</p>}
+          {jobError && <p className="error">Job error: {jobError}</p>}
+        </section>
+
+        <section className="dashboardTop">
+          <div className="trendCard mapPanel">
+            <p className="boundaryMeta">
+              Boundary Source: <strong>{boundarySource}</strong> | Code: <strong>{boundaryCode}</strong>
+            </p>
             <div className="mapLegend">
               <span><i className="legendDot healthy" />Healthy</span>
               <span><i className="legendDot stressed" />Stressed</span>
               <span><i className="legendDot critical" />Critical</span>
               <span><i className="legendDot nodata" />No data</span>
             </div>
-            <MapContainer center={defaultCenter} zoom={10} className="map">
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {regions && (
-                <GeoJSON
-                  key={`${mapMetric}-${dateFrom}-${dateTo}-${regions.features[0]?.properties?.created_at ?? "na"}`}
-                  data={regions as unknown as GeoJSON.GeoJsonObject}
-                  style={(feature: any) => ({
-                    color: "#0f172a",
-                    weight: 2,
-                    fillColor: severityFillColor(feature?.properties?.severity),
-                    fillOpacity: 0.35
-                  })}
-                  onEachFeature={(feature: any, layer: any) => {
-                    const p = feature?.properties || {};
-                    const metric = String(p.metric || mapMetric).toUpperCase();
-                    const value = p.value ?? "N/A";
-                    const severity = p.severity ?? "N/A";
-                    const imageCount = p.image_count ?? "N/A";
-                    const updatedAt = p.created_at ? new Date(p.created_at).toLocaleString() : "N/A";
-                    layer.bindPopup(`
-                      <div style="min-width: 190px;">
-                        <strong>${p.name ?? "Region"}</strong><br/>
-                        Metric: ${metric}<br/>
-                        Value: ${value}<br/>
-                        Severity: ${severity}<br/>
-                        Images: ${imageCount}<br/>
-                        Updated: ${updatedAt}
-                      </div>
-                    `);
-                  }}
+            {mapMessage ? (
+              <div className="status">{mapMessage}</div>
+            ) : (
+              <MapContainer center={defaultCenter} zoom={10} className="map">
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-              )}
-            </MapContainer>
-          </>
-        )}
+                <FitToRegions regions={regions} />
+                {regions && (
+                  <GeoJSON
+                    key={`${mapMetric}-${dateFrom}-${dateTo}-${regions.features[0]?.properties?.created_at ?? "na"}`}
+                    data={regions as unknown as GeoJSON.GeoJsonObject}
+                    style={(feature: any) => ({
+                      color: "#0f172a",
+                      weight: 2,
+                      fillColor: severityFillColor(feature?.properties?.severity),
+                      fillOpacity: 0.35
+                    })}
+                    onEachFeature={(feature: any, layer: any) => {
+                      const p = feature?.properties || {};
+                      const metric = String(p.metric || mapMetric).toUpperCase();
+                      const value = p.value ?? "N/A";
+                      const severity = p.severity ?? "N/A";
+                      const imageCount = p.image_count ?? "N/A";
+                      const updatedAt = p.created_at ? new Date(p.created_at).toLocaleString() : "N/A";
+                      layer.bindPopup(`
+                        <div style="min-width: 190px;">
+                          <strong>${p.name ?? "Region"}</strong><br/>
+                          Metric: ${metric}<br/>
+                          Value: ${value}<br/>
+                          Severity: ${severity}<br/>
+                          Images: ${imageCount}<br/>
+                          Updated: ${updatedAt}
+                        </div>
+                      `);
+                    }}
+                  />
+                )}
+              </MapContainer>
+            )}
+          </div>
 
-        <section className="trendCard">
-          <h2>Impact Metrics (Region 1)</h2>
-          <p className="metaLine">
-            {impactLoading
-              ? "Refreshing..."
-              : `Data updated at: ${impact?.alerts.latest_alert_at ? new Date(impact.alerts.latest_alert_at).toLocaleString() : "N/A"}`}
-          </p>
-          {impactError && <p className="error">Failed to load impact metrics: {impactError}</p>}
-          {!impactLoading && !impactError && impact && (
-            <div className="impactGrid">
-              <div className="impactItem">
-                <span className="label">Area Monitored</span>
-                <strong>{impact.region.area_km2.toFixed(2)} km2</strong>
-              </div>
-              <div className="impactItem">
-                <span className="label">Total Windows</span>
-                <strong>{impact.windows.total}</strong>
-              </div>
-              <div className="impactItem">
-                <span className="label">NDVI/NDWI/LST Windows</span>
-                <strong>{impact.windows.ndvi}/{impact.windows.ndwi}/{impact.windows.lst}</strong>
-              </div>
-              <div className="impactItem">
-                <span className="label">Alerts (Total)</span>
-                <strong>{impact.alerts.total}</strong>
-              </div>
-              <div className="impactItem">
-                <span className="label">Critical Alerts</span>
-                <strong>{impact.alerts.critical}</strong>
-              </div>
-              <div className="impactItem">
-                <span className="label">Stressed Alerts</span>
-                <strong>{impact.alerts.stressed}</strong>
-              </div>
+          <aside className="trendCard insightsPanel">
+            <h2>Quick Snapshot</h2>
+            <div className="impactGrid compactGrid">
+              <div className="impactItem"><span className="label">Latest NDVI</span><strong>{latestTrend?.mean_ndvi ?? "N/A"}</strong></div>
+              <div className="impactItem"><span className="label">Latest NDWI</span><strong>{latestNdwi?.mean_ndwi ?? "N/A"}</strong></div>
+              <div className="impactItem"><span className="label">Latest LST (C)</span><strong>{latestLst?.mean_lst_c ?? "N/A"}</strong></div>
+              <div className="impactItem"><span className="label">Active Alerts</span><strong>{alerts.length}</strong></div>
             </div>
-          )}
+
+            <h3>Impact Metrics</h3>
+            {impactLoading && <p className="muted">Loading impact metrics...</p>}
+            {impactError && <p className="error">Failed to load impact metrics: {impactError}</p>}
+            {!impactLoading && !impactError && impact && (
+              <div className="impactGrid compactGrid">
+                <div className="impactItem"><span className="label">Area Monitored</span><strong>{impact.region.area_km2.toFixed(2)} km2</strong></div>
+                <div className="impactItem"><span className="label">Total Windows</span><strong>{impact.windows.total}</strong></div>
+                <div className="impactItem"><span className="label">Critical Alerts</span><strong>{impact.alerts.critical}</strong></div>
+              </div>
+            )}
+
+            <h3>Advisory</h3>
+            {advisoryLoading && <p className="muted">Loading advisory...</p>}
+            {advisoryError && <p className="error">Failed to load advisory: {advisoryError}</p>}
+            {!advisoryLoading && !advisoryError && advisory && (
+              <div className="advisoryBox">
+                {advisory.advisory_messages.length === 0 ? (
+                  <p className="muted">No advisory messages available for this window.</p>
+                ) : (
+                  <ul className="advisoryList">
+                    {advisory.advisory_messages.slice(0, 3).map((message, index) => (
+                      <li key={index}>{message}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </aside>
         </section>
 
-        <section className="trendCard">
-          <h2>Advisory (Region 1)</h2>
-          <p className="metaLine">
-            {advisoryLoading
-              ? "Refreshing..."
-              : `Data updated at: ${advisory?.latest_observation?.created_at ? new Date(advisory.latest_observation.created_at).toLocaleString() : "N/A"}`}
-          </p>
-          {advisoryError && <p className="error">Failed to load advisory: {advisoryError}</p>}
-          {!advisoryLoading && !advisoryError && advisory && (
-            <div className="advisoryBox">
-              {advisory.advisory_messages.length === 0 ? (
-                <p className="muted">No advisory messages available for this window.</p>
-              ) : (
-                <ul className="advisoryList">
-                  {advisory.advisory_messages.map((message, index) => (
-                    <li key={index}>{message}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </section>
-
-        <section className="trendCard">
+        <section className="trendCard chartSection">
           <h2>90-Day Trend Chart</h2>
           {trendError && <p className="error">Failed to load chart data: {trendError}</p>}
           {!trendLoading && !trendError && chartData.length === 0 && (
@@ -515,160 +572,86 @@ export default function App() {
         </section>
 
         <section className="trendCard">
-          <h2>Combined Trends (NDVI + NDWI + LST)</h2>
-          <p className="metaLine">
-            {trendLoading
-              ? "Refreshing..."
-              : `Rows: ${consolidatedTrendData.length}`}
-          </p>
-          {trendError && <p className="error">Failed to load combined trends: {trendError}</p>}
-
-          {!trendLoading && !trendError && (
-            <div className="trendTableWrap">
-              <table className="trendTable">
-                <thead>
-                  <tr>
-                    <th>Date Start</th>
-                    <th>Date End</th>
-                    <th>NDVI</th>
-                    <th>NDWI</th>
-                    <th>LST (C)</th>
-                    <th>NDVI Sev</th>
-                    <th>NDWI Sev</th>
-                    <th>LST Sev</th>
-                    <th>Updated At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {consolidatedTrendData.map((item, index) => (
-                    <tr key={`${item.date_start}-${item.created_at}-${index}`}>
-                      <td>{new Date(item.date_start).toLocaleDateString()}</td>
-                      <td>{new Date(item.date_end).toLocaleDateString()}</td>
-                      <td>{item.mean_ndvi ?? "N/A"}</td>
-                      <td>{item.mean_ndwi ?? "N/A"}</td>
-                      <td>{item.mean_lst_c ?? "N/A"}</td>
-                      <td className={item.ndvi_severity ? `sev-${item.ndvi_severity}` : ""}>{item.ndvi_severity ?? "N/A"}</td>
-                      <td className={item.ndwi_severity ? `sev-${item.ndwi_severity}` : ""}>{item.ndwi_severity ?? "N/A"}</td>
-                      <td className={item.lst_severity ? `sev-${item.lst_severity}` : ""}>{item.lst_severity ?? "N/A"}</td>
-                      <td>{new Date(item.created_at).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <section className="trendCard">
-          <h2>Date Window</h2>
-          <div className="dateControls">
-            <label>
-              From
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
-            </label>
-            <label>
-              To
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
-            </label>
-            <button type="button" onClick={() => void refreshStatsAndAlerts()}>
-              {refreshingAll ? "Refreshing..." : "Refresh Window"}
-            </button>
+          <div className="detailsTabs">
+            <button type="button" className={detailsTab === "combined" ? "active" : ""} onClick={() => setDetailsTab("combined")}>Combined</button>
+            <button type="button" className={detailsTab === "ndvi" ? "active" : ""} onClick={() => setDetailsTab("ndvi")}>NDVI</button>
+            <button type="button" className={detailsTab === "ndwi" ? "active" : ""} onClick={() => setDetailsTab("ndwi")}>NDWI</button>
+            <button type="button" className={detailsTab === "lst" ? "active" : ""} onClick={() => setDetailsTab("lst")}>LST</button>
+            <button type="button" className={detailsTab === "alerts" ? "active" : ""} onClick={() => setDetailsTab("alerts")}>Alerts</button>
           </div>
-          {rangeError && <p className="error">{rangeError}</p>}
-        </section>
 
-        <section className="trendCard">
-          <h2>Run Index Jobs (Region 1)</h2>
-          <div className="jobActions">
-            <button
-              type="button"
-              onClick={() => void runJob("ndvi")}
-              disabled={jobRunning !== null || !!rangeError || refreshingAll}
-            >
-              Run NDVI
-            </button>
-            <button
-              type="button"
-              onClick={() => void runJob("ndwi")}
-              disabled={jobRunning !== null || !!rangeError || refreshingAll}
-            >
-              Run NDWI
-            </button>
-            <button
-              type="button"
-              onClick={() => void runJob("lst")}
-              disabled={jobRunning !== null || !!rangeError || refreshingAll}
-            >
-              Run LST
-            </button>
-          </div>
-          {jobMessage && <p className="muted">{jobMessage}</p>}
-          {jobError && <p className="error">Job error: {jobError}</p>}
-        </section>
-
-        <section className="trendCard">
-          <div className="cardHeader">
-            <h2>NDVI Trend (Region 1)</h2>
-            <button
-              type="button"
-              className="clearBtn"
-              onClick={() => void clearCardData("ndvi")}
-              disabled={clearingCard !== null || jobRunning !== null}
-            >
-              {clearingCard === "ndvi" ? "Clearing..." : "Clear"}
-            </button>
-          </div>
-          <p className="metaLine">
-            {trendLoading
-              ? "Refreshing..."
-              : `Data updated at: ${latestTrend?.created_at ? new Date(latestTrend.created_at).toLocaleString() : "N/A"}`}
-          </p>
-
-          {trendLoading && <p className="muted">Loading NDVI trends...</p>}
-          {trendError && <p className="error">Failed to load NDVI trends: {trendError}</p>}
-
-          {!trendLoading && !trendError && (
+          {detailsTab === "combined" && (
             <>
-              <div className="trendSummary">
-                <div>
-                  <span className="label">Records</span>
-                  <strong>{trendData.length}</strong>
+              <h2>Combined Trends</h2>
+              <p className="metaLine">{trendLoading ? "Refreshing..." : `Rows: ${consolidatedTrendData.length}`}</p>
+              {trendError && <p className="error">Failed to load combined trends: {trendError}</p>}
+              {!trendLoading && !trendError && (
+                <div className="trendTableWrap">
+                  <table className="trendTable">
+                    <thead>
+                      <tr>
+                        <th>Date Start</th>
+                        <th>Date End</th>
+                        <th className="num">NDVI</th>
+                        <th className="num">NDWI</th>
+                        <th className="num">LST (C)</th>
+                        <th>NDVI Sev</th>
+                        <th>NDWI Sev</th>
+                        <th>LST Sev</th>
+                        <th className="nowrap">Updated At</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {consolidatedTrendData.map((item, index) => (
+                        <tr key={`${item.date_start}-${item.created_at}-${index}`}>
+                          <td>{new Date(item.date_start).toLocaleDateString()}</td>
+                          <td>{new Date(item.date_end).toLocaleDateString()}</td>
+                          <td className="num">{item.mean_ndvi ?? "N/A"}</td>
+                          <td className="num">{item.mean_ndwi ?? "N/A"}</td>
+                          <td className="num">{item.mean_lst_c ?? "N/A"}</td>
+                          <td className={item.ndvi_severity ? `sev-${item.ndvi_severity}` : ""}>{item.ndvi_severity ?? "N/A"}</td>
+                          <td className={item.ndwi_severity ? `sev-${item.ndwi_severity}` : ""}>{item.ndwi_severity ?? "N/A"}</td>
+                          <td className={item.lst_severity ? `sev-${item.lst_severity}` : ""}>{item.lst_severity ?? "N/A"}</td>
+                          <td className="nowrap">{new Date(item.created_at).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div>
-                  <span className="label">Latest NDVI</span>
-                  <strong>{latestTrend?.mean_ndvi ?? "N/A"}</strong>
-                </div>
-                <div>
-                  <span className="label">Images Used</span>
-                  <strong>{latestTrend?.ndvi_image_count ?? "N/A"}</strong>
-                </div>
-              </div>
+              )}
+            </>
+          )}
 
+          {detailsTab === "ndvi" && (
+            <>
+              <div className="cardHeader">
+                <h2>NDVI Details</h2>
+                <button
+                  type="button"
+                  className="clearBtn"
+                  onClick={() => void clearCardData("ndvi")}
+                  disabled={clearingCard !== null || jobRunning !== null}
+                >
+                  {clearingCard === "ndvi" ? "Clearing..." : "Clear"}
+                </button>
+              </div>
+              <div className="trendSummary">
+                <div><span className="label">Records</span><strong>{trendData.length}</strong></div>
+                <div><span className="label">Latest NDVI</span><strong>{latestTrend?.mean_ndvi ?? "N/A"}</strong></div>
+                <div><span className="label">Images Used</span><strong>{latestTrend?.ndvi_image_count ?? "N/A"}</strong></div>
+              </div>
               <div className="trendTableWrap">
                 <table className="trendTable">
                   <thead>
-                    <tr>
-                      <th>Date Start</th>
-                      <th>Date End</th>
-                      <th>Mean NDVI</th>
-                      <th>Images</th>
-                    </tr>
+                    <tr><th>Date Start</th><th>Date End</th><th className="num">Mean NDVI</th><th className="num">Images</th></tr>
                   </thead>
                   <tbody>
                     {trendData.map((item, index) => (
                       <tr key={`${item.date_start}-${index}`}>
                         <td>{new Date(item.date_start).toLocaleDateString()}</td>
                         <td>{new Date(item.date_end).toLocaleDateString()}</td>
-                        <td>{item.mean_ndvi ?? "N/A"}</td>
-                        <td>{item.ndvi_image_count ?? "N/A"}</td>
+                        <td className="num">{item.mean_ndvi ?? "N/A"}</td>
+                        <td className="num">{item.ndvi_image_count ?? "N/A"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -676,63 +659,37 @@ export default function App() {
               </div>
             </>
           )}
-        </section>
 
-        <section className="trendCard">
-          <div className="cardHeader">
-            <h2>NDWI Stats (Region 1)</h2>
-            <button
-              type="button"
-              className="clearBtn"
-              onClick={() => void clearCardData("ndwi")}
-              disabled={clearingCard !== null || jobRunning !== null}
-            >
-              {clearingCard === "ndwi" ? "Clearing..." : "Clear"}
-            </button>
-          </div>
-          <p className="metaLine">
-            {ndwiLoading
-              ? "Refreshing..."
-              : `Data updated at: ${latestNdwi?.created_at ? new Date(latestNdwi.created_at).toLocaleString() : "N/A"}`}
-          </p>
-
-          {ndwiLoading && <p className="muted">Loading NDWI stats...</p>}
-          {ndwiError && <p className="error">Failed to load NDWI stats: {ndwiError}</p>}
-
-          {!ndwiLoading && !ndwiError && (
+          {detailsTab === "ndwi" && (
             <>
-              <div className="trendSummary">
-                <div>
-                  <span className="label">Records</span>
-                  <strong>{ndwiData.length}</strong>
-                </div>
-                <div>
-                  <span className="label">Latest NDWI</span>
-                  <strong>{latestNdwi?.mean_ndwi ?? "N/A"}</strong>
-                </div>
-                <div>
-                  <span className="label">Images Used</span>
-                  <strong>{latestNdwi?.ndwi_image_count ?? latestNdwi?.source_image_count ?? "N/A"}</strong>
-                </div>
+              <div className="cardHeader">
+                <h2>NDWI Details</h2>
+                <button
+                  type="button"
+                  className="clearBtn"
+                  onClick={() => void clearCardData("ndwi")}
+                  disabled={clearingCard !== null || jobRunning !== null}
+                >
+                  {clearingCard === "ndwi" ? "Clearing..." : "Clear"}
+                </button>
               </div>
-
+              <div className="trendSummary">
+                <div><span className="label">Records</span><strong>{ndwiData.length}</strong></div>
+                <div><span className="label">Latest NDWI</span><strong>{latestNdwi?.mean_ndwi ?? "N/A"}</strong></div>
+                <div><span className="label">Images Used</span><strong>{latestNdwi?.ndwi_image_count ?? latestNdwi?.source_image_count ?? "N/A"}</strong></div>
+              </div>
               <div className="trendTableWrap">
                 <table className="trendTable">
                   <thead>
-                    <tr>
-                      <th>Date Start</th>
-                      <th>Date End</th>
-                      <th>Mean NDWI</th>
-                      <th>Images</th>
-                    </tr>
+                    <tr><th>Date Start</th><th>Date End</th><th className="num">Mean NDWI</th><th className="num">Images</th></tr>
                   </thead>
                   <tbody>
                     {ndwiData.map((item, index) => (
                       <tr key={`${item.date_start}-${index}`}>
                         <td>{new Date(item.date_start).toLocaleDateString()}</td>
                         <td>{new Date(item.date_end).toLocaleDateString()}</td>
-                        <td>{item.mean_ndwi ?? "N/A"}</td>
-                        <td>{item.ndwi_image_count ?? item.source_image_count}</td>
+                        <td className="num">{item.mean_ndwi ?? "N/A"}</td>
+                        <td className="num">{item.ndwi_image_count ?? item.source_image_count}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -740,63 +697,37 @@ export default function App() {
               </div>
             </>
           )}
-        </section>
 
-        <section className="trendCard">
-          <div className="cardHeader">
-            <h2>LST Stats (Region 1)</h2>
-            <button
-              type="button"
-              className="clearBtn"
-              onClick={() => void clearCardData("lst")}
-              disabled={clearingCard !== null || jobRunning !== null}
-            >
-              {clearingCard === "lst" ? "Clearing..." : "Clear"}
-            </button>
-          </div>
-          <p className="metaLine">
-            {lstLoading
-              ? "Refreshing..."
-              : `Data updated at: ${latestLst?.created_at ? new Date(latestLst.created_at).toLocaleString() : "N/A"}`}
-          </p>
-
-          {lstLoading && <p className="muted">Loading LST stats...</p>}
-          {lstError && <p className="error">Failed to load LST stats: {lstError}</p>}
-
-          {!lstLoading && !lstError && (
+          {detailsTab === "lst" && (
             <>
-              <div className="trendSummary">
-                <div>
-                  <span className="label">Records</span>
-                  <strong>{lstData.length}</strong>
-                </div>
-                <div>
-                  <span className="label">Latest LST (C)</span>
-                  <strong>{latestLst?.mean_lst_c ?? "N/A"}</strong>
-                </div>
-                <div>
-                  <span className="label">Images Used</span>
-                  <strong>{latestLst?.lst_image_count ?? latestLst?.source_image_count ?? "N/A"}</strong>
-                </div>
+              <div className="cardHeader">
+                <h2>LST Details</h2>
+                <button
+                  type="button"
+                  className="clearBtn"
+                  onClick={() => void clearCardData("lst")}
+                  disabled={clearingCard !== null || jobRunning !== null}
+                >
+                  {clearingCard === "lst" ? "Clearing..." : "Clear"}
+                </button>
               </div>
-
+              <div className="trendSummary">
+                <div><span className="label">Records</span><strong>{lstData.length}</strong></div>
+                <div><span className="label">Latest LST (C)</span><strong>{latestLst?.mean_lst_c ?? "N/A"}</strong></div>
+                <div><span className="label">Images Used</span><strong>{latestLst?.lst_image_count ?? latestLst?.source_image_count ?? "N/A"}</strong></div>
+              </div>
               <div className="trendTableWrap">
                 <table className="trendTable">
                   <thead>
-                    <tr>
-                      <th>Date Start</th>
-                      <th>Date End</th>
-                      <th>Mean LST (C)</th>
-                      <th>Images</th>
-                    </tr>
+                    <tr><th>Date Start</th><th>Date End</th><th className="num">Mean LST (C)</th><th className="num">Images</th></tr>
                   </thead>
                   <tbody>
                     {lstData.map((item, index) => (
                       <tr key={`${item.date_start}-${index}`}>
                         <td>{new Date(item.date_start).toLocaleDateString()}</td>
                         <td>{new Date(item.date_end).toLocaleDateString()}</td>
-                        <td>{item.mean_lst_c ?? "N/A"}</td>
-                        <td>{item.lst_image_count ?? item.source_image_count}</td>
+                        <td className="num">{item.mean_lst_c ?? "N/A"}</td>
+                        <td className="num">{item.lst_image_count ?? item.source_image_count}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -804,58 +735,32 @@ export default function App() {
               </div>
             </>
           )}
-        </section>
 
-        <section className="trendCard">
-          <div className="cardHeader">
-            <h2>Active Alerts (Region 1)</h2>
-            <button
-              type="button"
-              className="clearBtn"
-              onClick={() => void clearCardData("alerts")}
-              disabled={clearingCard !== null || jobRunning !== null}
-            >
-              {clearingCard === "alerts" ? "Clearing..." : "Clear"}
-            </button>
-          </div>
-          <p className="metaLine">
-            {alertsLoading
-              ? "Refreshing..."
-              : `Data updated at: ${alerts[0]?.created_at ? new Date(alerts[0].created_at).toLocaleString() : "N/A"}`}
-          </p>
-
-          {alertsLoading && <p className="muted">Loading alerts...</p>}
-          {alertsError && <p className="error">Failed to load alerts: {alertsError}</p>}
-
-          {!alertsLoading && !alertsError && (
+          {detailsTab === "alerts" && (
             <>
+              <div className="cardHeader">
+                <h2>Active Alerts</h2>
+                <button
+                  type="button"
+                  className="clearBtn"
+                  onClick={() => void clearCardData("alerts")}
+                  disabled={clearingCard !== null || jobRunning !== null}
+                >
+                  {clearingCard === "alerts" ? "Clearing..." : "Clear"}
+                </button>
+              </div>
               <div className="trendSummary">
-                <div>
-                  <span className="label">Alert Count</span>
-                  <strong>{alerts.length}</strong>
-                </div>
-                <div>
-                  <span className="label">Latest Metric</span>
-                  <strong>{alerts[0]?.metric?.toUpperCase() ?? "N/A"}</strong>
-                </div>
+                <div><span className="label">Alert Count</span><strong>{alerts.length}</strong></div>
+                <div><span className="label">Latest Metric</span><strong>{alerts[0]?.metric?.toUpperCase() ?? "N/A"}</strong></div>
                 <div>
                   <span className="label">Latest Severity</span>
-                  <strong className={`sev-${alerts[0]?.severity ?? "healthy"}`}>
-                    {alerts[0]?.severity ?? "N/A"}
-                  </strong>
+                  <strong className={alerts[0]?.severity ? `sev-${alerts[0].severity}` : ""}>{alerts[0]?.severity ?? "N/A"}</strong>
                 </div>
               </div>
-
               <div className="trendTableWrap">
                 <table className="trendTable">
                   <thead>
-                    <tr>
-                      <th>Metric</th>
-                      <th>Severity</th>
-                      <th>Date Start</th>
-                      <th>Date End</th>
-                      <th>Message</th>
-                    </tr>
+                    <tr><th>Metric</th><th>Severity</th><th>Date Start</th><th>Date End</th><th>Message</th></tr>
                   </thead>
                   <tbody>
                     {alerts.map((item) => (

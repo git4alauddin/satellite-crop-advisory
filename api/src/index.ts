@@ -50,7 +50,9 @@ app.get("/regions", async (_req, res) => {
             'geometry', ST_AsGeoJSON(geom)::jsonb,
             'properties', jsonb_build_object(
               'id', id,
-              'name', name
+              'name', name,
+              'region_code', region_code,
+              'source', source
             )
           )
         ), '[]'::jsonb)
@@ -269,6 +271,8 @@ app.get("/health-map", async (req, res) => {
             'properties', jsonb_build_object(
               'id', r.id,
               'name', r.name,
+              'region_code', r.region_code,
+              'source', r.source,
               'metric', $4::text,
               'value', CASE
                 WHEN $4::text = 'ndvi' THEN ls.mean_ndvi

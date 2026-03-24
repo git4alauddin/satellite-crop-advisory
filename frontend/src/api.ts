@@ -7,6 +7,8 @@ export type RegionFeature = {
   properties: {
     id: number;
     name: string;
+    region_code?: string | null;
+    source?: string | null;
     metric?: "ndvi" | "ndwi" | "lst";
     value?: number | null;
     severity?: "healthy" | "stressed" | "critical" | null;
