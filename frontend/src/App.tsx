@@ -2,6 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { GeoJSON, MapContainer, TileLayer } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
 import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
+import {
   clearAlerts,
   clearLSTStats,
   clearNDVIStats,
@@ -60,6 +70,7 @@ export default function App() {
   const [jobError, setJobError] = useState<string | null>(null);
   const [rangeError, setRangeError] = useState<string | null>(null);
   const [clearingCard, setClearingCard] = useState<"ndvi" | "ndwi" | "lst" | "alerts" | null>(null);
+  const [refreshingAll, setRefreshingAll] = useState(false);
 
   async function loadMapData() {
     try {
@@ -181,6 +192,7 @@ export default function App() {
       return;
     }
     setRangeError(null);
+    setRefreshingAll(true);
     setTrendLoading(true);
     setTrendError(null);
     setNdwiLoading(true);
@@ -203,6 +215,7 @@ export default function App() {
       loadImpactMetrics(),
       loadAdvisory()
     ]);
+    setRefreshingAll(false);
   }
 
   async function runJob(jobType: JobType) {
@@ -302,6 +315,25 @@ export default function App() {
   const latestTrend = trendData.length > 0 ? trendData[trendData.length - 1] : null;
   const latestNdwi = ndwiData.length > 0 ? ndwiData[ndwiData.length - 1] : null;
   const latestLst = lstData.length > 0 ? lstData[lstData.length - 1] : null;
+  const chartData = useMemo(() => {
+    const end = new Date(dateTo);
+    if (Number.isNaN(end.getTime())) return [];
+
+    const start = new Date(end);
+    start.setDate(start.getDate() - 90);
+
+    return consolidatedTrendData
+      .filter((item) => {
+        const d = new Date(item.date_end);
+        return d >= start && d <= end;
+      })
+      .map((item) => ({
+        date: new Date(item.date_end).toLocaleDateString(),
+        ndvi: item.mean_ndvi,
+        ndwi: item.mean_ndwi,
+        lst: item.mean_lst_c
+      }));
+  }, [consolidatedTrendData, dateTo]);
 
   function severityFillColor(severity?: string | null): string {
     if (severity === "critical") return "#ef4444";
@@ -329,6 +361,7 @@ export default function App() {
                   type="button"
                   className={mapMetric === "ndvi" ? "active" : ""}
                   onClick={() => setMapMetric("ndvi")}
+                  disabled={refreshingAll}
                 >
                   NDVI
                 </button>
@@ -336,6 +369,7 @@ export default function App() {
                   type="button"
                   className={mapMetric === "ndwi" ? "active" : ""}
                   onClick={() => setMapMetric("ndwi")}
+                  disabled={refreshingAll}
                 >
                   NDWI
                 </button>
@@ -343,10 +377,17 @@ export default function App() {
                   type="button"
                   className={mapMetric === "lst" ? "active" : ""}
                   onClick={() => setMapMetric("lst")}
+                  disabled={refreshingAll}
                 >
                   LST
                 </button>
               </div>
+            </div>
+            <div className="mapLegend">
+              <span><i className="legendDot healthy" />Healthy</span>
+              <span><i className="legendDot stressed" />Stressed</span>
+              <span><i className="legendDot critical" />Critical</span>
+              <span><i className="legendDot nodata" />No data</span>
             </div>
             <MapContainer center={defaultCenter} zoom={10} className="map">
               <TileLayer
@@ -363,6 +404,24 @@ export default function App() {
                     fillColor: severityFillColor(feature?.properties?.severity),
                     fillOpacity: 0.35
                   })}
+                  onEachFeature={(feature: any, layer: any) => {
+                    const p = feature?.properties || {};
+                    const metric = String(p.metric || mapMetric).toUpperCase();
+                    const value = p.value ?? "N/A";
+                    const severity = p.severity ?? "N/A";
+                    const imageCount = p.image_count ?? "N/A";
+                    const updatedAt = p.created_at ? new Date(p.created_at).toLocaleString() : "N/A";
+                    layer.bindPopup(`
+                      <div style="min-width: 190px;">
+                        <strong>${p.name ?? "Region"}</strong><br/>
+                        Metric: ${metric}<br/>
+                        Value: ${value}<br/>
+                        Severity: ${severity}<br/>
+                        Images: ${imageCount}<br/>
+                        Updated: ${updatedAt}
+                      </div>
+                    `);
+                  }}
                 />
               )}
             </MapContainer>
@@ -426,6 +485,31 @@ export default function App() {
                   ))}
                 </ul>
               )}
+            </div>
+          )}
+        </section>
+
+        <section className="trendCard">
+          <h2>90-Day Trend Chart</h2>
+          {trendError && <p className="error">Failed to load chart data: {trendError}</p>}
+          {!trendLoading && !trendError && chartData.length === 0 && (
+            <p className="muted">No data available in the last 90 days of selected window.</p>
+          )}
+          {!trendLoading && !trendError && chartData.length > 0 && (
+            <div className="chartWrap">
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis yAxisId="idx" domain={[-1, 1]} />
+                  <YAxis yAxisId="lst" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="idx" type="monotone" dataKey="ndvi" name="NDVI" stroke="#16a34a" dot={false} />
+                  <Line yAxisId="idx" type="monotone" dataKey="ndwi" name="NDWI" stroke="#0284c7" dot={false} />
+                  <Line yAxisId="lst" type="monotone" dataKey="lst" name="LST (C)" stroke="#dc2626" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           )}
         </section>
@@ -495,7 +579,7 @@ export default function App() {
               />
             </label>
             <button type="button" onClick={() => void refreshStatsAndAlerts()}>
-              Refresh Window
+              {refreshingAll ? "Refreshing..." : "Refresh Window"}
             </button>
           </div>
           {rangeError && <p className="error">{rangeError}</p>}
@@ -507,21 +591,21 @@ export default function App() {
             <button
               type="button"
               onClick={() => void runJob("ndvi")}
-              disabled={jobRunning !== null || !!rangeError}
+              disabled={jobRunning !== null || !!rangeError || refreshingAll}
             >
               Run NDVI
             </button>
             <button
               type="button"
               onClick={() => void runJob("ndwi")}
-              disabled={jobRunning !== null || !!rangeError}
+              disabled={jobRunning !== null || !!rangeError || refreshingAll}
             >
               Run NDWI
             </button>
             <button
               type="button"
               onClick={() => void runJob("lst")}
-              disabled={jobRunning !== null || !!rangeError}
+              disabled={jobRunning !== null || !!rangeError || refreshingAll}
             >
               Run LST
             </button>

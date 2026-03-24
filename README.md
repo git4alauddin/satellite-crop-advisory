@@ -1,4 +1,8 @@
-<h1 align="center">KrishiDrishti</h1>
+<h1 align="center">
+  <span style="color:#14532d; font-size:56px; font-weight:900; letter-spacing:0.4px; font-family:'Georgia', 'Times New Roman', serif;">
+    Krishi Drishti
+  </span>
+</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=white" alt="React" />
@@ -38,21 +42,15 @@ Build a system that converts raw satellite imagery into simple, actionable crop-
 - `README.md` - project overview and setup guide
 
 ## Milestone Breakdown
-
-Legend:
-- ![done](https://img.shields.io/badge/status-done-22c55e)
-- ![in-progress](https://img.shields.io/badge/status-in--progress-f59e0b)
-- ![pending](https://img.shields.io/badge/status-pending-6b7280)
-
 | Milestone Area | Scope | Status |
 |---|---|---|
-| Data Ingestion & Preprocessing | Sentinel-2 + MODIS fetch, cloud filtering, region clipping | ![done](https://img.shields.io/badge/status-done-22c55e) |
-| Core Index Engine | NDVI, NDWI, LST computation and persistence | ![done](https://img.shields.io/badge/status-done-22c55e) |
-| Context Layer | Baseline lookup, anomaly calculation, severity classification | ![done](https://img.shields.io/badge/status-done-22c55e) |
-| Temporal Intelligence | Multi-window comparison and seasonal trend enhancement | ![in-progress](https://img.shields.io/badge/status-in--progress-f59e0b) |
-| Advisory & Alerts | Alert rules, alert storage, alert API, alert UI panel | ![pending](https://img.shields.io/badge/status-pending-6b7280) |
-| Dashboard Experience | Consistent NDVI/NDWI/LST rendering and UX polish | ![in-progress](https://img.shields.io/badge/status-in--progress-f59e0b) |
-| Validation & Reliability | Field validation narrative, tests, CI/deployment hardening | ![pending](https://img.shields.io/badge/status-pending-6b7280) |
+| Data Ingestion & Preprocessing | Sentinel-2 + MODIS fetch, cloud filtering, region clipping | ![done](https://img.shields.io/badge/done-22c55e) |
+| Core Index Engine | NDVI, NDWI, LST computation and persistence | ![done](https://img.shields.io/badge/done-22c55e) |
+| Context Layer | Baseline lookup, anomaly calculation, severity classification | ![done](https://img.shields.io/badge/done-22c55e) |
+| Temporal Intelligence | Multi-window comparison and seasonal trend enhancement | ![done](https://img.shields.io/badge/done-22c55e) |
+| Advisory & Alerts | Alert rules, alert storage, alert API, alert UI panel | ![done](https://img.shields.io/badge/done-22c55e) |
+| Dashboard Experience | Consistent NDVI/NDWI/LST rendering and UX polish | ![in-progress](https://img.shields.io/badge/in--progress-f59e0b) |
+| Validation & Reliability | Field validation narrative, tests, CI/deployment hardening | ![in-progress](https://img.shields.io/badge/in--progress-f59e0b) |
 
 ## Setup & Run
 
@@ -121,8 +119,8 @@ npm run dev
 - Processor health: `http://localhost:8000/health`
 
 ## Milestones Ahead
-- Implement alert generation rules (NDVI drop threshold)
-- Add alert retrieval API and dashboard alert panel
-- Add stronger weekly/monthly trend aggregations
-- Add validation story for early stress detection vs field reports
-- Improve reliability with tests, CI, and deployment pipeline
+- Final UI polish and presentation-quality dashboard refinement
+- Integrate realistic region boundaries (official shapefiles/GeoJSON)
+- Add deeper automated tests (integration + negative-path + performance)
+- Add CI pipeline for automated build/test checks on PRs
+- Add deployment hardening and production runbook

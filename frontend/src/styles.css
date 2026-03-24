@@ -61,6 +61,44 @@ body {
   margin-bottom: 8px;
 }
 
+.mapLegend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.mapLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legendDot.healthy {
+  background: #22c55e;
+}
+
+.legendDot.stressed {
+  background: #f59e0b;
+}
+
+.legendDot.critical {
+  background: #ef4444;
+}
+
+.legendDot.nodata {
+  background: #94a3b8;
+}
+
 .layerButtons {
   display: flex;
   gap: 8px;
@@ -80,6 +118,11 @@ body {
   border-color: #0f766e;
   background: #0f766e;
   color: #ffffff;
+}
+
+.layerButtons button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .trendCard {
@@ -218,6 +261,14 @@ body {
 
 .advisoryList li {
   margin: 6px 0;
+}
+
+.chartWrap {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
 }
 
 .label {
