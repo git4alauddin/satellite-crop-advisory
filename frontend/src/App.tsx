@@ -6,16 +6,20 @@ import {
   clearLSTStats,
   clearNDVIStats,
   clearNDWIStats,
+  getHealthMap,
   getJobStatus,
+  getAdvisory,
   getAlerts,
-  getLSTStats,
-  getNDVIStats,
-  getNDWIStats,
-  getRegions,
+  getImpactMetrics,
+  getTrends,
   submitJob,
+  type AdvisoryResponse,
   type AlertItem,
+  type ConsolidatedTrendItem,
+  type ImpactMetricsResponse,
   type JobType,
   type LSTStatItem,
+  type MapMetric,
   type NDVITrendItem,
   type NDWIStatItem,
   type RegionFeatureCollection
@@ -30,6 +34,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trendData, setTrendData] = useState<NDVITrendItem[]>([]);
+  const [consolidatedTrendData, setConsolidatedTrendData] = useState<ConsolidatedTrendItem[]>([]);
   const [trendLoading, setTrendLoading] = useState(true);
   const [trendError, setTrendError] = useState<string | null>(null);
   const [ndwiData, setNdwiData] = useState<NDWIStatItem[]>([]);
@@ -41,6 +46,13 @@ export default function App() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
   const [alertsError, setAlertsError] = useState<string | null>(null);
+  const [impact, setImpact] = useState<ImpactMetricsResponse | null>(null);
+  const [impactLoading, setImpactLoading] = useState(true);
+  const [impactError, setImpactError] = useState<string | null>(null);
+  const [advisory, setAdvisory] = useState<AdvisoryResponse | null>(null);
+  const [advisoryLoading, setAdvisoryLoading] = useState(true);
+  const [advisoryError, setAdvisoryError] = useState<string | null>(null);
+  const [mapMetric, setMapMetric] = useState<MapMetric>("ndvi");
   const [dateFrom, setDateFrom] = useState(DEFAULT_RANGE_FROM);
   const [dateTo, setDateTo] = useState(DEFAULT_RANGE_TO);
   const [jobRunning, setJobRunning] = useState<JobType | null>(null);
@@ -49,10 +61,10 @@ export default function App() {
   const [rangeError, setRangeError] = useState<string | null>(null);
   const [clearingCard, setClearingCard] = useState<"ndvi" | "ndwi" | "lst" | "alerts" | null>(null);
 
-  async function loadRegions() {
+  async function loadMapData() {
     try {
-      const data = await getRegions();
-      setRegions(data);
+      const data = await getHealthMap(1, dateFrom, dateTo, mapMetric);
+      setRegions(data.data);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       setError(message);
@@ -61,38 +73,68 @@ export default function App() {
     }
   }
 
-  async function loadTrends() {
+  async function loadConsolidatedTrends() {
     try {
-      const data = await getNDVIStats(1, dateFrom, dateTo);
-      setTrendData(data.items);
+      const data = await getTrends(1, dateFrom, dateTo);
+      const items = data.items as ConsolidatedTrendItem[];
+
+      const ndviItems: NDVITrendItem[] = items
+        .filter((item) => item.mean_ndvi !== null)
+        .map((item) => ({
+          region_id: item.region_id,
+          date_start: item.date_start,
+          date_end: item.date_end,
+          source_image_count: item.ndvi_image_count ?? 0,
+          ndvi_image_count: item.ndvi_image_count ?? undefined,
+          mean_ndvi: item.mean_ndvi,
+          ndvi_anomaly: item.ndvi_anomaly,
+          ndvi_severity: item.ndvi_severity,
+          created_at: item.created_at
+        }));
+
+      const ndwiItems: NDWIStatItem[] = items
+        .filter((item) => item.mean_ndwi !== null)
+        .map((item) => ({
+          region_id: item.region_id,
+          date_start: item.date_start,
+          date_end: item.date_end,
+          source_image_count: item.ndwi_image_count ?? 0,
+          ndwi_image_count: item.ndwi_image_count ?? undefined,
+          mean_ndwi: item.mean_ndwi,
+          created_at: item.created_at
+        }));
+
+      const lstItems: LSTStatItem[] = items
+        .filter((item) => item.mean_lst_c !== null)
+        .map((item) => ({
+          region_id: item.region_id,
+          date_start: item.date_start,
+          date_end: item.date_end,
+          source_image_count: item.lst_image_count ?? 0,
+          lst_image_count: item.lst_image_count ?? undefined,
+          mean_lst_c: item.mean_lst_c,
+          created_at: item.created_at
+        }));
+
+      setTrendData(ndviItems);
+      setConsolidatedTrendData(items);
+      setNdwiData(ndwiItems);
+      setLstData(lstItems);
+      setTrendError(null);
+      setNdwiError(null);
+      setLstError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       setTrendError(message);
+      setNdwiError(message);
+      setLstError(message);
+      setTrendData([]);
+      setConsolidatedTrendData([]);
+      setNdwiData([]);
+      setLstData([]);
     } finally {
       setTrendLoading(false);
-    }
-  }
-
-  async function loadNdwi() {
-    try {
-      const data = await getNDWIStats(1, dateFrom, dateTo);
-      setNdwiData(data.items);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      setNdwiError(message);
-    } finally {
       setNdwiLoading(false);
-    }
-  }
-
-  async function loadLst() {
-    try {
-      const data = await getLSTStats(1, dateFrom, dateTo);
-      setLstData(data.items);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      setLstError(message);
-    } finally {
       setLstLoading(false);
     }
   }
@@ -106,6 +148,30 @@ export default function App() {
       setAlertsError(message);
     } finally {
       setAlertsLoading(false);
+    }
+  }
+
+  async function loadImpactMetrics() {
+    try {
+      const data = await getImpactMetrics(1, dateFrom, dateTo);
+      setImpact(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setImpactError(message);
+    } finally {
+      setImpactLoading(false);
+    }
+  }
+
+  async function loadAdvisory() {
+    try {
+      const data = await getAdvisory(1, dateFrom, dateTo);
+      setAdvisory(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setAdvisoryError(message);
+    } finally {
+      setAdvisoryLoading(false);
     }
   }
 
@@ -123,8 +189,20 @@ export default function App() {
     setLstError(null);
     setAlertsLoading(true);
     setAlertsError(null);
+    setImpactLoading(true);
+    setImpactError(null);
+    setAdvisoryLoading(true);
+    setAdvisoryError(null);
+    setLoading(true);
+    setError(null);
 
-    await Promise.all([loadTrends(), loadNdwi(), loadLst(), loadAlerts()]);
+    await Promise.all([
+      loadMapData(),
+      loadConsolidatedTrends(),
+      loadAlerts(),
+      loadImpactMetrics(),
+      loadAdvisory()
+    ]);
   }
 
   async function runJob(jobType: JobType) {
@@ -185,13 +263,13 @@ export default function App() {
     try {
       if (target === "ndvi") {
         await clearNDVIStats(1, dateFrom, dateTo);
-        await loadTrends();
+        await loadConsolidatedTrends();
       } else if (target === "ndwi") {
         await clearNDWIStats(1, dateFrom, dateTo);
-        await loadNdwi();
+        await loadConsolidatedTrends();
       } else if (target === "lst") {
         await clearLSTStats(1, dateFrom, dateTo);
-        await loadLst();
+        await loadConsolidatedTrends();
       } else {
         await clearAlerts(1, dateFrom, dateTo);
         await loadAlerts();
@@ -204,11 +282,14 @@ export default function App() {
   }
 
   useEffect(() => {
-    void loadRegions();
-    void loadTrends();
-    void loadNdwi();
-    void loadLst();
+    void loadMapData();
+  }, [dateFrom, dateTo, mapMetric]);
+
+  useEffect(() => {
+    void loadConsolidatedTrends();
     void loadAlerts();
+    void loadImpactMetrics();
+    void loadAdvisory();
   }, [dateFrom, dateTo]);
 
   const mapMessage = useMemo(() => {
@@ -222,6 +303,13 @@ export default function App() {
   const latestNdwi = ndwiData.length > 0 ? ndwiData[ndwiData.length - 1] : null;
   const latestLst = lstData.length > 0 ? lstData[lstData.length - 1] : null;
 
+  function severityFillColor(severity?: string | null): string {
+    if (severity === "critical") return "#ef4444";
+    if (severity === "stressed") return "#f59e0b";
+    if (severity === "healthy") return "#22c55e";
+    return "#94a3b8";
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -233,24 +321,159 @@ export default function App() {
         {mapMessage ? (
           <div className="status">{mapMessage}</div>
         ) : (
-          <MapContainer center={defaultCenter} zoom={10} className="map">
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {regions && (
-              <GeoJSON
-                data={regions as unknown as GeoJSON.GeoJsonObject}
-                style={{
-                  color: "#0f766e",
-                  weight: 2,
-                  fillColor: "#14b8a6",
-                  fillOpacity: 0.2
-                }}
+          <>
+            <div className="mapControls">
+              <span className="label">Map Layer</span>
+              <div className="layerButtons">
+                <button
+                  type="button"
+                  className={mapMetric === "ndvi" ? "active" : ""}
+                  onClick={() => setMapMetric("ndvi")}
+                >
+                  NDVI
+                </button>
+                <button
+                  type="button"
+                  className={mapMetric === "ndwi" ? "active" : ""}
+                  onClick={() => setMapMetric("ndwi")}
+                >
+                  NDWI
+                </button>
+                <button
+                  type="button"
+                  className={mapMetric === "lst" ? "active" : ""}
+                  onClick={() => setMapMetric("lst")}
+                >
+                  LST
+                </button>
+              </div>
+            </div>
+            <MapContainer center={defaultCenter} zoom={10} className="map">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-            )}
-          </MapContainer>
+              {regions && (
+                <GeoJSON
+                  key={`${mapMetric}-${dateFrom}-${dateTo}-${regions.features[0]?.properties?.created_at ?? "na"}`}
+                  data={regions as unknown as GeoJSON.GeoJsonObject}
+                  style={(feature: any) => ({
+                    color: "#0f172a",
+                    weight: 2,
+                    fillColor: severityFillColor(feature?.properties?.severity),
+                    fillOpacity: 0.35
+                  })}
+                />
+              )}
+            </MapContainer>
+          </>
         )}
+
+        <section className="trendCard">
+          <h2>Impact Metrics (Region 1)</h2>
+          <p className="metaLine">
+            {impactLoading
+              ? "Refreshing..."
+              : `Data updated at: ${impact?.alerts.latest_alert_at ? new Date(impact.alerts.latest_alert_at).toLocaleString() : "N/A"}`}
+          </p>
+          {impactError && <p className="error">Failed to load impact metrics: {impactError}</p>}
+          {!impactLoading && !impactError && impact && (
+            <div className="impactGrid">
+              <div className="impactItem">
+                <span className="label">Area Monitored</span>
+                <strong>{impact.region.area_km2.toFixed(2)} km2</strong>
+              </div>
+              <div className="impactItem">
+                <span className="label">Total Windows</span>
+                <strong>{impact.windows.total}</strong>
+              </div>
+              <div className="impactItem">
+                <span className="label">NDVI/NDWI/LST Windows</span>
+                <strong>{impact.windows.ndvi}/{impact.windows.ndwi}/{impact.windows.lst}</strong>
+              </div>
+              <div className="impactItem">
+                <span className="label">Alerts (Total)</span>
+                <strong>{impact.alerts.total}</strong>
+              </div>
+              <div className="impactItem">
+                <span className="label">Critical Alerts</span>
+                <strong>{impact.alerts.critical}</strong>
+              </div>
+              <div className="impactItem">
+                <span className="label">Stressed Alerts</span>
+                <strong>{impact.alerts.stressed}</strong>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="trendCard">
+          <h2>Advisory (Region 1)</h2>
+          <p className="metaLine">
+            {advisoryLoading
+              ? "Refreshing..."
+              : `Data updated at: ${advisory?.latest_observation?.created_at ? new Date(advisory.latest_observation.created_at).toLocaleString() : "N/A"}`}
+          </p>
+          {advisoryError && <p className="error">Failed to load advisory: {advisoryError}</p>}
+          {!advisoryLoading && !advisoryError && advisory && (
+            <div className="advisoryBox">
+              {advisory.advisory_messages.length === 0 ? (
+                <p className="muted">No advisory messages available for this window.</p>
+              ) : (
+                <ul className="advisoryList">
+                  {advisory.advisory_messages.map((message, index) => (
+                    <li key={index}>{message}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </section>
+
+        <section className="trendCard">
+          <h2>Combined Trends (NDVI + NDWI + LST)</h2>
+          <p className="metaLine">
+            {trendLoading
+              ? "Refreshing..."
+              : `Rows: ${consolidatedTrendData.length}`}
+          </p>
+          {trendError && <p className="error">Failed to load combined trends: {trendError}</p>}
+
+          {!trendLoading && !trendError && (
+            <div className="trendTableWrap">
+              <table className="trendTable">
+                <thead>
+                  <tr>
+                    <th>Date Start</th>
+                    <th>Date End</th>
+                    <th>NDVI</th>
+                    <th>NDWI</th>
+                    <th>LST (C)</th>
+                    <th>NDVI Sev</th>
+                    <th>NDWI Sev</th>
+                    <th>LST Sev</th>
+                    <th>Updated At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {consolidatedTrendData.map((item, index) => (
+                    <tr key={`${item.date_start}-${item.created_at}-${index}`}>
+                      <td>{new Date(item.date_start).toLocaleDateString()}</td>
+                      <td>{new Date(item.date_end).toLocaleDateString()}</td>
+                      <td>{item.mean_ndvi ?? "N/A"}</td>
+                      <td>{item.mean_ndwi ?? "N/A"}</td>
+                      <td>{item.mean_lst_c ?? "N/A"}</td>
+                      <td className={item.ndvi_severity ? `sev-${item.ndvi_severity}` : ""}>{item.ndvi_severity ?? "N/A"}</td>
+                      <td className={item.ndwi_severity ? `sev-${item.ndwi_severity}` : ""}>{item.ndwi_severity ?? "N/A"}</td>
+                      <td className={item.lst_severity ? `sev-${item.lst_severity}` : ""}>{item.lst_severity ?? "N/A"}</td>
+                      <td>{new Date(item.created_at).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         <section className="trendCard">
           <h2>Date Window</h2>

@@ -53,6 +53,35 @@ body {
   border-radius: 8px;
 }
 
+.mapControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.layerButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.layerButtons button {
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.layerButtons button.active {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #ffffff;
+}
+
 .trendCard {
   margin-top: 12px;
   border: 1px solid #cbd5e1;
@@ -162,6 +191,35 @@ body {
   background: #f8fafc;
 }
 
+.impactGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.impactItem {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+.advisoryBox {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+}
+
+.advisoryList {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.advisoryList li {
+  margin: 6px 0;
+}
+
 .label {
   display: block;
   color: #64748b;
@@ -215,6 +273,10 @@ body {
 
 @media (max-width: 768px) {
   .trendSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .impactGrid {
     grid-template-columns: 1fr;
   }
 }
