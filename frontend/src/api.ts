@@ -32,7 +32,38 @@ export type NDVITrendResponse = {
   items: NDVITrendItem[];
 };
 
+export type NDWIStatItem = {
+  region_id: number;
+  date_start: string;
+  date_end: string;
+  source_image_count: number;
+  ndwi_image_count?: number;
+  mean_ndwi: number | null;
+  created_at: string;
+};
+
+export type NDWIStatResponse = {
+  count: number;
+  items: NDWIStatItem[];
+};
+
+export type LSTStatItem = {
+  region_id: number;
+  date_start: string;
+  date_end: string;
+  source_image_count: number;
+  lst_image_count?: number;
+  mean_lst_c: number | null;
+  created_at: string;
+};
+
+export type LSTStatResponse = {
+  count: number;
+  items: LSTStatItem[];
+};
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const PROCESSOR_BASE_URL = import.meta.env.VITE_PROCESSOR_BASE_URL || "http://localhost:8000";
 
 export async function getRegions(): Promise<RegionFeatureCollection> {
   const response = await fetch(`${API_BASE_URL}/regions`);
@@ -58,4 +89,20 @@ export async function getNDVITrends(
     throw new Error(`Failed to fetch NDVI trends: ${response.status}`);
   }
   return response.json() as Promise<NDVITrendResponse>;
+}
+
+export async function getNDWIStats(regionId: number): Promise<NDWIStatResponse> {
+  const response = await fetch(`${PROCESSOR_BASE_URL}/stats/ndwi?region_id=${regionId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch NDWI stats: ${response.status}`);
+  }
+  return response.json() as Promise<NDWIStatResponse>;
+}
+
+export async function getLSTStats(regionId: number): Promise<LSTStatResponse> {
+  const response = await fetch(`${PROCESSOR_BASE_URL}/stats/lst?region_id=${regionId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch LST stats: ${response.status}`);
+  }
+  return response.json() as Promise<LSTStatResponse>;
 }

@@ -2,9 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { GeoJSON, MapContainer, TileLayer } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
 import {
+  getLSTStats,
   getNDVITrends,
+  getNDWIStats,
   getRegions,
+  type LSTStatItem,
   type NDVITrendItem,
+  type NDWIStatItem,
   type RegionFeatureCollection
 } from "./api";
 
@@ -17,6 +21,12 @@ export default function App() {
   const [trendData, setTrendData] = useState<NDVITrendItem[]>([]);
   const [trendLoading, setTrendLoading] = useState(true);
   const [trendError, setTrendError] = useState<string | null>(null);
+  const [ndwiData, setNdwiData] = useState<NDWIStatItem[]>([]);
+  const [ndwiLoading, setNdwiLoading] = useState(true);
+  const [ndwiError, setNdwiError] = useState<string | null>(null);
+  const [lstData, setLstData] = useState<LSTStatItem[]>([]);
+  const [lstLoading, setLstLoading] = useState(true);
+  const [lstError, setLstError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadRegions() {
@@ -43,8 +53,34 @@ export default function App() {
       }
     }
 
+    async function loadNdwi() {
+      try {
+        const data = await getNDWIStats(1);
+        setNdwiData(data.items);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        setNdwiError(message);
+      } finally {
+        setNdwiLoading(false);
+      }
+    }
+
+    async function loadLst() {
+      try {
+        const data = await getLSTStats(1);
+        setLstData(data.items);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        setLstError(message);
+      } finally {
+        setLstLoading(false);
+      }
+    }
+
     void loadRegions();
     void loadTrends();
+    void loadNdwi();
+    void loadLst();
   }, []);
 
   const mapMessage = useMemo(() => {
@@ -55,6 +91,8 @@ export default function App() {
   }, [loading, error, regions]);
 
   const latestTrend = trendData.length > 0 ? trendData[trendData.length - 1] : null;
+  const latestNdwi = ndwiData.length > 0 ? ndwiData[ndwiData.length - 1] : null;
+  const latestLst = lstData.length > 0 ? lstData[lstData.length - 1] : null;
 
   return (
     <div className="app">
@@ -126,6 +164,104 @@ export default function App() {
                         <td>{new Date(item.date_end).toLocaleDateString()}</td>
                         <td>{item.mean_ndvi ?? "N/A"}</td>
                         <td>{item.source_image_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className="trendCard">
+          <h2>NDWI Stats (Region 1)</h2>
+
+          {ndwiLoading && <p className="muted">Loading NDWI stats...</p>}
+          {ndwiError && <p className="error">Failed to load NDWI stats: {ndwiError}</p>}
+
+          {!ndwiLoading && !ndwiError && (
+            <>
+              <div className="trendSummary">
+                <div>
+                  <span className="label">Records</span>
+                  <strong>{ndwiData.length}</strong>
+                </div>
+                <div>
+                  <span className="label">Latest NDWI</span>
+                  <strong>{latestNdwi?.mean_ndwi ?? "N/A"}</strong>
+                </div>
+                <div>
+                  <span className="label">Images Used</span>
+                  <strong>{latestNdwi?.ndwi_image_count ?? latestNdwi?.source_image_count ?? "N/A"}</strong>
+                </div>
+              </div>
+
+              <div className="trendTableWrap">
+                <table className="trendTable">
+                  <thead>
+                    <tr>
+                      <th>Date Start</th>
+                      <th>Date End</th>
+                      <th>Mean NDWI</th>
+                      <th>Images</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ndwiData.map((item, index) => (
+                      <tr key={`${item.date_start}-${index}`}>
+                        <td>{new Date(item.date_start).toLocaleDateString()}</td>
+                        <td>{new Date(item.date_end).toLocaleDateString()}</td>
+                        <td>{item.mean_ndwi ?? "N/A"}</td>
+                        <td>{item.ndwi_image_count ?? item.source_image_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className="trendCard">
+          <h2>LST Stats (Region 1)</h2>
+
+          {lstLoading && <p className="muted">Loading LST stats...</p>}
+          {lstError && <p className="error">Failed to load LST stats: {lstError}</p>}
+
+          {!lstLoading && !lstError && (
+            <>
+              <div className="trendSummary">
+                <div>
+                  <span className="label">Records</span>
+                  <strong>{lstData.length}</strong>
+                </div>
+                <div>
+                  <span className="label">Latest LST (C)</span>
+                  <strong>{latestLst?.mean_lst_c ?? "N/A"}</strong>
+                </div>
+                <div>
+                  <span className="label">Images Used</span>
+                  <strong>{latestLst?.lst_image_count ?? latestLst?.source_image_count ?? "N/A"}</strong>
+                </div>
+              </div>
+
+              <div className="trendTableWrap">
+                <table className="trendTable">
+                  <thead>
+                    <tr>
+                      <th>Date Start</th>
+                      <th>Date End</th>
+                      <th>Mean LST (C)</th>
+                      <th>Images</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lstData.map((item, index) => (
+                      <tr key={`${item.date_start}-${index}`}>
+                        <td>{new Date(item.date_start).toLocaleDateString()}</td>
+                        <td>{new Date(item.date_end).toLocaleDateString()}</td>
+                        <td>{item.mean_lst_c ?? "N/A"}</td>
+                        <td>{item.lst_image_count ?? item.source_image_count}</td>
                       </tr>
                     ))}
                   </tbody>
