@@ -1,0 +1,4 @@
+ALTER TABLE index_stats
+ADD COLUMN IF NOT EXISTS ndvi_image_count INTEGER,
+ADD COLUMN IF NOT EXISTS ndwi_image_count INTEGER,
+ADD COLUMN IF NOT EXISTS lst_image_count INTEGER;
