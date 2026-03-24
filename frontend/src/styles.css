@@ -66,6 +66,88 @@ body {
   font-size: 1rem;
 }
 
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cardHeader h2 {
+  margin: 0 0 4px;
+}
+
+.clearBtn {
+  border: 1px solid #b91c1c;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #ffffff;
+  color: #b91c1c;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.clearBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.metaLine {
+  margin: -2px 0 10px;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.jobActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.dateControls {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.dateControls label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.dateControls input {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.dateControls button {
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #334155;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.jobActions button {
+  border: 1px solid #0f766e;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #0f766e;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.jobActions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .trendSummary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
