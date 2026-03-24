@@ -211,6 +211,42 @@ def upsert_index_stats(
         conn.commit()
 
 
+def upsert_alert(
+    region_id: int,
+    metric: str,
+    severity: str,
+    message: str,
+    date_start: str,
+    date_end: str,
+    meta: dict | None = None,
+) -> None:
+    query = """
+        INSERT INTO alerts (region_id, metric, severity, message, date_start, date_end, meta)
+        VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
+        ON CONFLICT (region_id, metric, date_start, date_end)
+        DO UPDATE SET
+            severity = EXCLUDED.severity,
+            message = EXCLUDED.message,
+            meta = EXCLUDED.meta,
+            created_at = NOW()
+    """
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                query,
+                (
+                    region_id,
+                    metric,
+                    severity,
+                    message,
+                    date_start,
+                    date_end,
+                    json.dumps(meta or {}),
+                ),
+            )
+        conn.commit()
+
+
 @app.get("/health")
 def health():
     return {
@@ -261,6 +297,40 @@ def get_ndvi_stats(region_id: int, from_date: str | None = None, to_date: str | 
         )
 
     return {"count": len(records), "items": records}
+
+
+@app.get("/alerts")
+def get_alerts(region_id: int, from_date: str | None = None, to_date: str | None = None):
+    query = """
+        SELECT id, region_id, metric, severity, message, date_start, date_end, meta, created_at
+        FROM alerts
+        WHERE region_id = %s
+          AND (%s::date IS NULL OR date_start >= %s::date)
+          AND (%s::date IS NULL OR date_end <= %s::date)
+        ORDER BY created_at DESC
+        LIMIT 100
+    """
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (region_id, from_date, from_date, to_date, to_date))
+            rows = cur.fetchall()
+
+    items = []
+    for row in rows:
+        items.append(
+            {
+                "id": row[0],
+                "region_id": row[1],
+                "metric": row[2],
+                "severity": row[3],
+                "message": row[4],
+                "date_start": row[5].isoformat(),
+                "date_end": row[6].isoformat(),
+                "meta": row[7],
+                "created_at": row[8].isoformat(),
+            }
+        )
+    return {"count": len(items), "items": items}
 
 
 @app.get("/stats/ndwi")
@@ -383,6 +453,20 @@ def run_ndvi_job_worker(job_id: str, payload: NDVIJobRequest) -> None:
             ndwi_severity=None,
             lst_severity=None,
         )
+        if ndvi_anomaly is not None and ndvi_anomaly <= -0.20:
+            upsert_alert(
+                region_id=payload.region_id,
+                metric="ndvi",
+                severity="critical",
+                message="NDVI dropped more than 20% from baseline; vegetation stress likely.",
+                date_start=payload.start_date,
+                date_end=payload.end_date,
+                meta={
+                    "mean_ndvi": mean_ndvi,
+                    "baseline_ndvi": ndvi_baseline,
+                    "ndvi_anomaly": ndvi_anomaly,
+                },
+            )
 
         ndvi_jobs[job_id]["status"] = "completed"
         ndvi_jobs[job_id]["result"] = {
@@ -466,6 +550,20 @@ def run_ndwi_job_worker(job_id: str, payload: NDVIJobRequest) -> None:
             ndwi_severity=ndwi_severity,
             lst_severity=None,
         )
+        if ndwi_severity in {"stressed", "critical"}:
+            upsert_alert(
+                region_id=payload.region_id,
+                metric="ndwi",
+                severity=ndwi_severity,
+                message=f"NDWI indicates {ndwi_severity} water stress conditions.",
+                date_start=payload.start_date,
+                date_end=payload.end_date,
+                meta={
+                    "mean_ndwi": mean_ndwi,
+                    "baseline_ndwi": ndwi_baseline,
+                    "ndwi_anomaly": ndwi_anomaly,
+                },
+            )
 
         ndwi_jobs[job_id]["status"] = "completed"
         ndwi_jobs[job_id]["result"] = {
@@ -477,6 +575,7 @@ def run_ndwi_job_worker(job_id: str, payload: NDVIJobRequest) -> None:
             "ndwi_baseline": ndwi_baseline,
             "ndwi_anomaly": ndwi_anomaly,
             "ndwi_severity": ndwi_severity,
+            "alert_generated": ndwi_severity in {"stressed", "critical"},
         }
     except Exception as error:
         ndwi_jobs[job_id]["status"] = "failed"
@@ -549,6 +648,20 @@ def run_lst_job_worker(job_id: str, payload: NDVIJobRequest) -> None:
             ndwi_severity=None,
             lst_severity=lst_severity,
         )
+        if lst_severity in {"stressed", "critical"}:
+            upsert_alert(
+                region_id=payload.region_id,
+                metric="lst",
+                severity=lst_severity,
+                message=f"LST indicates {lst_severity} heat stress conditions.",
+                date_start=payload.start_date,
+                date_end=payload.end_date,
+                meta={
+                    "mean_lst_c": mean_lst_c,
+                    "baseline_lst_c": lst_baseline,
+                    "lst_anomaly_c": lst_anomaly_c,
+                },
+            )
 
         lst_jobs[job_id]["status"] = "completed"
         lst_jobs[job_id]["result"] = {
@@ -560,6 +673,7 @@ def run_lst_job_worker(job_id: str, payload: NDVIJobRequest) -> None:
             "lst_baseline": lst_baseline,
             "lst_anomaly_c": lst_anomaly_c,
             "lst_severity": lst_severity,
+            "alert_generated": lst_severity in {"stressed", "critical"},
         }
     except Exception as error:
         lst_jobs[job_id]["status"] = "failed"

@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { GeoJSON, MapContainer, TileLayer } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
 import {
+  getAlerts,
   getLSTStats,
-  getNDVITrends,
+  getNDVIStats,
   getNDWIStats,
   getRegions,
+  type AlertItem,
   type LSTStatItem,
   type NDVITrendItem,
   type NDWIStatItem,
@@ -29,6 +31,9 @@ export default function App() {
   const [lstData, setLstData] = useState<LSTStatItem[]>([]);
   const [lstLoading, setLstLoading] = useState(true);
   const [lstError, setLstError] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(true);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadRegions() {
@@ -45,7 +50,7 @@ export default function App() {
 
     async function loadTrends() {
       try {
-        const data = await getNDVITrends(1, RANGE_FROM, RANGE_TO);
+        const data = await getNDVIStats(1, RANGE_FROM, RANGE_TO);
         setTrendData(data.items);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
@@ -79,10 +84,23 @@ export default function App() {
       }
     }
 
+    async function loadAlerts() {
+      try {
+        const data = await getAlerts(1, RANGE_FROM, RANGE_TO);
+        setAlerts(data.items);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        setAlertsError(message);
+      } finally {
+        setAlertsLoading(false);
+      }
+    }
+
     void loadRegions();
     void loadTrends();
     void loadNdwi();
     void loadLst();
+    void loadAlerts();
   }, []);
 
   const mapMessage = useMemo(() => {
@@ -264,6 +282,59 @@ export default function App() {
                         <td>{new Date(item.date_end).toLocaleDateString()}</td>
                         <td>{item.mean_lst_c ?? "N/A"}</td>
                         <td>{item.lst_image_count ?? item.source_image_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className="trendCard">
+          <h2>Active Alerts (Region 1)</h2>
+
+          {alertsLoading && <p className="muted">Loading alerts...</p>}
+          {alertsError && <p className="error">Failed to load alerts: {alertsError}</p>}
+
+          {!alertsLoading && !alertsError && (
+            <>
+              <div className="trendSummary">
+                <div>
+                  <span className="label">Alert Count</span>
+                  <strong>{alerts.length}</strong>
+                </div>
+                <div>
+                  <span className="label">Latest Metric</span>
+                  <strong>{alerts[0]?.metric?.toUpperCase() ?? "N/A"}</strong>
+                </div>
+                <div>
+                  <span className="label">Latest Severity</span>
+                  <strong className={`sev-${alerts[0]?.severity ?? "healthy"}`}>
+                    {alerts[0]?.severity ?? "N/A"}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="trendTableWrap">
+                <table className="trendTable">
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      <th>Severity</th>
+                      <th>Date Start</th>
+                      <th>Date End</th>
+                      <th>Message</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {alerts.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.metric.toUpperCase()}</td>
+                        <td className={`sev-${item.severity}`}>{item.severity}</td>
+                        <td>{new Date(item.date_start).toLocaleDateString()}</td>
+                        <td>{new Date(item.date_end).toLocaleDateString()}</td>
+                        <td>{item.message}</td>
                       </tr>
                     ))}
                   </tbody>

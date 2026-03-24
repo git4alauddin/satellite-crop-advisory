@@ -95,6 +95,21 @@ body {
   color: #b91c1c;
 }
 
+.sev-critical {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.sev-stressed {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.sev-healthy {
+  color: #166534;
+  font-weight: 700;
+}
+
 .trendTableWrap {
   overflow-x: auto;
 }

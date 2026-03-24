@@ -20,14 +20,14 @@ export type NDVITrendItem = {
   date_start: string;
   date_end: string;
   source_image_count: number;
+  ndvi_image_count?: number;
   mean_ndvi: number | null;
+  ndvi_anomaly?: number | null;
+  ndvi_severity?: string | null;
   created_at: string;
 };
 
-export type NDVITrendResponse = {
-  regionId: number;
-  from: string;
-  to: string;
+export type NDVIStatResponse = {
   count: number;
   items: NDVITrendItem[];
 };
@@ -62,6 +62,23 @@ export type LSTStatResponse = {
   items: LSTStatItem[];
 };
 
+export type AlertItem = {
+  id: number;
+  region_id: number;
+  metric: string;
+  severity: "healthy" | "stressed" | "critical" | string;
+  message: string;
+  date_start: string;
+  date_end: string;
+  meta: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type AlertResponse = {
+  count: number;
+  items: AlertItem[];
+};
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 const PROCESSOR_BASE_URL = import.meta.env.VITE_PROCESSOR_BASE_URL || "http://localhost:8000";
 
@@ -77,18 +94,36 @@ export async function getNDVITrends(
   regionId: number,
   from: string,
   to: string
-): Promise<NDVITrendResponse> {
+): Promise<NDVIStatResponse> {
   const params = new URLSearchParams({
-    regionId: String(regionId),
-    from,
-    to
+    region_id: String(regionId),
+    from_date: from,
+    to_date: to
   });
 
-  const response = await fetch(`${API_BASE_URL}/trends/ndvi?${params.toString()}`);
+  const response = await fetch(`${PROCESSOR_BASE_URL}/stats/ndvi?${params.toString()}`);
   if (!response.ok) {
-    throw new Error(`Failed to fetch NDVI trends: ${response.status}`);
+    throw new Error(`Failed to fetch NDVI stats: ${response.status}`);
   }
-  return response.json() as Promise<NDVITrendResponse>;
+  return response.json() as Promise<NDVIStatResponse>;
+}
+
+export async function getNDVIStats(
+  regionId: number,
+  from: string,
+  to: string
+): Promise<NDVIStatResponse> {
+  const params = new URLSearchParams({
+    region_id: String(regionId),
+    from_date: from,
+    to_date: to
+  });
+
+  const response = await fetch(`${PROCESSOR_BASE_URL}/stats/ndvi?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch NDVI stats: ${response.status}`);
+  }
+  return response.json() as Promise<NDVIStatResponse>;
 }
 
 export async function getNDWIStats(
@@ -121,4 +156,20 @@ export async function getLSTStats(
     throw new Error(`Failed to fetch LST stats: ${response.status}`);
   }
   return response.json() as Promise<LSTStatResponse>;
+}
+
+export async function getAlerts(
+  regionId: number,
+  from?: string,
+  to?: string
+): Promise<AlertResponse> {
+  const params = new URLSearchParams({ region_id: String(regionId) });
+  if (from) params.set("from_date", from);
+  if (to) params.set("to_date", to);
+
+  const response = await fetch(`${PROCESSOR_BASE_URL}/alerts?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch alerts: ${response.status}`);
+  }
+  return response.json() as Promise<AlertResponse>;
 }
