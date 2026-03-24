@@ -91,16 +91,32 @@ export async function getNDVITrends(
   return response.json() as Promise<NDVITrendResponse>;
 }
 
-export async function getNDWIStats(regionId: number): Promise<NDWIStatResponse> {
-  const response = await fetch(`${PROCESSOR_BASE_URL}/stats/ndwi?region_id=${regionId}`);
+export async function getNDWIStats(
+  regionId: number,
+  from?: string,
+  to?: string
+): Promise<NDWIStatResponse> {
+  const params = new URLSearchParams({ region_id: String(regionId) });
+  if (from) params.set("from_date", from);
+  if (to) params.set("to_date", to);
+
+  const response = await fetch(`${PROCESSOR_BASE_URL}/stats/ndwi?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch NDWI stats: ${response.status}`);
   }
   return response.json() as Promise<NDWIStatResponse>;
 }
 
-export async function getLSTStats(regionId: number): Promise<LSTStatResponse> {
-  const response = await fetch(`${PROCESSOR_BASE_URL}/stats/lst?region_id=${regionId}`);
+export async function getLSTStats(
+  regionId: number,
+  from?: string,
+  to?: string
+): Promise<LSTStatResponse> {
+  const params = new URLSearchParams({ region_id: String(regionId) });
+  if (from) params.set("from_date", from);
+  if (to) params.set("to_date", to);
+
+  const response = await fetch(`${PROCESSOR_BASE_URL}/stats/lst?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch LST stats: ${response.status}`);
   }

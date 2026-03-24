@@ -13,6 +13,8 @@ import {
 } from "./api";
 
 const defaultCenter: LatLngExpression = [28.61, 77.16];
+const RANGE_FROM = "2025-01-01";
+const RANGE_TO = "2025-12-31";
 
 export default function App() {
   const [regions, setRegions] = useState<RegionFeatureCollection | null>(null);
@@ -43,7 +45,7 @@ export default function App() {
 
     async function loadTrends() {
       try {
-        const data = await getNDVITrends(1, "2025-01-01", "2025-12-31");
+        const data = await getNDVITrends(1, RANGE_FROM, RANGE_TO);
         setTrendData(data.items);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
@@ -55,7 +57,7 @@ export default function App() {
 
     async function loadNdwi() {
       try {
-        const data = await getNDWIStats(1);
+        const data = await getNDWIStats(1, RANGE_FROM, RANGE_TO);
         setNdwiData(data.items);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
@@ -67,7 +69,7 @@ export default function App() {
 
     async function loadLst() {
       try {
-        const data = await getLSTStats(1);
+        const data = await getLSTStats(1, RANGE_FROM, RANGE_TO);
         setLstData(data.items);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
