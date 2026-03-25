@@ -197,6 +197,28 @@ body {
   background: #f7faf7;
 }
 
+.listBlock {
+  margin-top: 10px;
+  border: 1px solid #d7e3d8;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+.listBlock h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.listBlock ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.listBlock li {
+  margin-bottom: 6px;
+}
+
 .error {
   color: #b91c1c;
 }
