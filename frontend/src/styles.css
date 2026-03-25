@@ -113,6 +113,22 @@ body {
 .buttonGroup {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.buttonGroup button {
+  border: 1px solid #9eb9a2;
+  background: #ffffff;
+  color: #2b4734;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.buttonGroup button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .buttonGroup button.active {
@@ -127,6 +143,58 @@ body {
 
 .meta strong {
   color: #14532d;
+}
+
+.summaryRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.summaryRow > div {
+  border: 1px solid #d7e3d8;
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+}
+
+.summaryRow span {
+  display: block;
+  font-size: 0.8rem;
+  color: #5f7a67;
+  margin-bottom: 3px;
+}
+
+.chartSimple {
+  border: 1px solid #d7e3d8;
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+  margin-bottom: 10px;
+}
+
+.tableWrap {
+  border: 1px solid #d7e3d8;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.simpleTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.simpleTable th,
+.simpleTable td {
+  border-bottom: 1px solid #edf3ee;
+  text-align: left;
+  padding: 8px;
+  font-size: 0.9rem;
+}
+
+.simpleTable th {
+  background: #f7faf7;
 }
 
 .error {
@@ -154,5 +222,9 @@ body {
 @media (max-width: 768px) {
   .map {
     height: 380px;
+  }
+
+  .summaryRow {
+    grid-template-columns: 1fr 1fr;
   }
 }

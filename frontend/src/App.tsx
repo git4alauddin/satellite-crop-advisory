@@ -21,7 +21,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>KrishiDrishti Frontend Rebuild</h1>
+        <h1>KrishiDrishti Frontend Building</h1>
         <button type="button" onClick={() => navigate("/")}>Component Hub</button>
       </header>
 
