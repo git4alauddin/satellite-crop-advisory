@@ -74,6 +74,9 @@ export default function MapPlaygroundPage() {
 
       <p className="meta">Boundary Source: <strong>{boundarySource}</strong> | Code: <strong>{boundaryCode}</strong></p>
       {error && <p className="error">{error}</p>}
+      {!loading && !error && !regions && (
+        <p className="meta">No map data loaded yet. Click "Load Map".</p>
+      )}
 
       <div className="mapWrap">
         <MapContainer center={defaultCenter} zoom={10} className="map">

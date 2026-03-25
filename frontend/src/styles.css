@@ -60,6 +60,17 @@ body {
   gap: 12px;
 }
 
+.hubTop {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.hubGridThree {
+  grid-template-columns: repeat(3, minmax(220px, 280px));
+  justify-content: center;
+}
+
 .hubCard {
   text-align: left;
   border: 1px solid #cfe1cf;
@@ -69,6 +80,11 @@ body {
   cursor: pointer;
   display: grid;
   gap: 6px;
+}
+
+.hubCardTop {
+  max-width: 420px;
+  width: 100%;
 }
 
 .hubCard strong {
@@ -197,6 +213,12 @@ body {
   background: #f7faf7;
 }
 
+.emptyCell {
+  text-align: center !important;
+  color: #587263;
+  padding: 14px 8px !important;
+}
+
 .listBlock {
   margin-top: 10px;
   border: 1px solid #d7e3d8;
@@ -265,6 +287,10 @@ body {
 
   .summaryRow {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .hubGridThree {
+    grid-template-columns: 1fr;
   }
 
   .dashboardGrid {

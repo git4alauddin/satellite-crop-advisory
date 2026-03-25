@@ -44,6 +44,9 @@ export default function AdvisoryPlaygroundPage() {
       </div>
 
       {error && <p className="error">{error}</p>}
+      {!loading && !error && !data && (
+        <p className="meta">No advisory payload loaded yet. Click "Load Advisory".</p>
+      )}
 
       {data && (
         <>

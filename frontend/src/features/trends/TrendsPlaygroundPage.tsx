@@ -103,15 +103,27 @@ export default function TrendsPlaygroundPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((item, index) => (
-              <tr key={`${item.date_start}-${item.created_at}-${index}`}>
-                <td>{new Date(item.date_start).toLocaleDateString()}</td>
-                <td>{new Date(item.date_end).toLocaleDateString()}</td>
-                <td>{item.mean_ndvi ?? "N/A"}</td>
-                <td>{item.mean_ndwi ?? "N/A"}</td>
-                <td>{item.mean_lst_c ?? "N/A"}</td>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="emptyCell">
+                  {loading
+                    ? "Loading trend rows..."
+                    : error
+                      ? "Unable to load trends. Check API/processor services."
+                      : "No trend rows found for this date window."}
+                </td>
               </tr>
-            ))}
+            ) : (
+              rows.map((item, index) => (
+                <tr key={`${item.date_start}-${item.created_at}-${index}`}>
+                  <td>{new Date(item.date_start).toLocaleDateString()}</td>
+                  <td>{new Date(item.date_end).toLocaleDateString()}</td>
+                  <td>{item.mean_ndvi ?? "N/A"}</td>
+                  <td>{item.mean_ndwi ?? "N/A"}</td>
+                  <td>{item.mean_lst_c ?? "N/A"}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

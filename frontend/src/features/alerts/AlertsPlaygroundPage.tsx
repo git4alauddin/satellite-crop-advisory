@@ -98,15 +98,27 @@ export default function AlertsPlaygroundPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>{item.metric.toUpperCase()}</td>
-                <td>{item.severity}</td>
-                <td>{new Date(item.date_start).toLocaleDateString()}</td>
-                <td>{new Date(item.date_end).toLocaleDateString()}</td>
-                <td>{item.message}</td>
+            {items.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="emptyCell">
+                  {loading
+                    ? "Loading alerts..."
+                    : error
+                      ? "Unable to load alerts. Check API/processor services."
+                      : "No alerts found for this date window."}
+                </td>
               </tr>
-            ))}
+            ) : (
+              items.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.metric.toUpperCase()}</td>
+                  <td>{item.severity}</td>
+                  <td>{new Date(item.date_start).toLocaleDateString()}</td>
+                  <td>{new Date(item.date_end).toLocaleDateString()}</td>
+                  <td>{item.message}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

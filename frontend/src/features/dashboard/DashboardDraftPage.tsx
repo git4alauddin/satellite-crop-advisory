@@ -214,14 +214,26 @@ export default function DashboardDraftPage() {
                 </tr>
               </thead>
               <tbody>
-                {trends.slice(-10).map((item, i) => (
-                  <tr key={`${item.date_end}-${i}`}>
-                    <td>{new Date(item.date_end).toLocaleDateString()}</td>
-                    <td>{item.mean_ndvi ?? "N/A"}</td>
-                    <td>{item.mean_ndwi ?? "N/A"}</td>
-                    <td>{item.mean_lst_c ?? "N/A"}</td>
+                {trends.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="emptyCell">
+                      {loading
+                        ? "Loading trends..."
+                        : error
+                          ? "Unable to load trends. Check API/processor services."
+                          : "No trend rows found for this date window."}
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  trends.slice(-10).map((item, i) => (
+                    <tr key={`${item.date_end}-${i}`}>
+                      <td>{new Date(item.date_end).toLocaleDateString()}</td>
+                      <td>{item.mean_ndvi ?? "N/A"}</td>
+                      <td>{item.mean_ndwi ?? "N/A"}</td>
+                      <td>{item.mean_lst_c ?? "N/A"}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -239,13 +251,25 @@ export default function DashboardDraftPage() {
                 </tr>
               </thead>
               <tbody>
-                {alerts.slice(0, 10).map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.metric.toUpperCase()}</td>
-                    <td>{item.severity}</td>
-                    <td>{item.message}</td>
+                {alerts.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="emptyCell">
+                      {loading
+                        ? "Loading alerts..."
+                        : error
+                          ? "Unable to load alerts. Check API/processor services."
+                          : "No alerts found for this date window."}
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  alerts.slice(0, 10).map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.metric.toUpperCase()}</td>
+                      <td>{item.severity}</td>
+                      <td>{item.message}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

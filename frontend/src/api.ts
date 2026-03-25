@@ -1,3 +1,6 @@
+export type Severity = "healthy" | "stressed" | "critical";
+export type MetricType = "ndvi" | "ndwi" | "lst";
+
 export type RegionFeature = {
   type: "Feature";
   geometry: {
@@ -9,9 +12,9 @@ export type RegionFeature = {
     name: string;
     region_code?: string | null;
     source?: string | null;
-    metric?: "ndvi" | "ndwi" | "lst";
+    metric?: MetricType;
     value?: number | null;
-    severity?: "healthy" | "stressed" | "critical" | null;
+    severity?: Severity | null;
     image_count?: number | null;
     date_start?: string | null;
     date_end?: string | null;
@@ -24,7 +27,7 @@ export type RegionFeatureCollection = {
   features: RegionFeature[];
 };
 
-export type MapMetric = "ndvi" | "ndwi" | "lst";
+export type MapMetric = MetricType;
 
 export type NDVITrendItem = {
   region_id: number;
@@ -34,7 +37,7 @@ export type NDVITrendItem = {
   ndvi_image_count?: number;
   mean_ndvi: number | null;
   ndvi_anomaly?: number | null;
-  ndvi_severity?: string | null;
+  ndvi_severity?: Severity | null;
   created_at: string;
 };
 
@@ -51,15 +54,15 @@ export type ConsolidatedTrendItem = {
   ndvi_image_count: number | null;
   mean_ndvi: number | null;
   ndvi_anomaly: number | null;
-  ndvi_severity: string | null;
+  ndvi_severity: Severity | null;
   ndwi_image_count: number | null;
   mean_ndwi: number | null;
   ndwi_anomaly: number | null;
-  ndwi_severity: string | null;
+  ndwi_severity: Severity | null;
   lst_image_count: number | null;
   mean_lst_c: number | null;
   lst_anomaly_c: number | null;
-  lst_severity: string | null;
+  lst_severity: Severity | null;
 };
 
 export type ConsolidatedTrendsResponse = {
@@ -77,6 +80,8 @@ export type NDWIStatItem = {
   source_image_count: number;
   ndwi_image_count?: number;
   mean_ndwi: number | null;
+  ndwi_anomaly?: number | null;
+  ndwi_severity?: Severity | null;
   created_at: string;
 };
 
@@ -92,6 +97,8 @@ export type LSTStatItem = {
   source_image_count: number;
   lst_image_count?: number;
   mean_lst_c: number | null;
+  lst_anomaly_c?: number | null;
+  lst_severity?: Severity | null;
   created_at: string;
 };
 
@@ -104,7 +111,7 @@ export type AlertItem = {
   id: number;
   region_id: number;
   metric: string;
-  severity: "healthy" | "stressed" | "critical" | string;
+  severity: Severity | string;
   message: string;
   date_start: string;
   date_end: string;
@@ -184,13 +191,13 @@ export type AdvisoryResponse = {
     created_at: string;
     mean_ndvi: number | null;
     ndvi_anomaly: number | null;
-    ndvi_severity: string | null;
+    ndvi_severity: Severity | null;
     mean_ndwi: number | null;
     ndwi_anomaly: number | null;
-    ndwi_severity: string | null;
+    ndwi_severity: Severity | null;
     mean_lst_c: number | null;
     lst_anomaly_c: number | null;
-    lst_severity: string | null;
+    lst_severity: Severity | null;
   } | null;
   alerts: {
     total: number;
@@ -218,12 +225,44 @@ type ClearResponse = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
-export async function getRegions(): Promise<RegionFeatureCollection> {
-  const response = await fetch(`${API_BASE_URL}/regions`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch regions: ${response.status}`);
+function buildParams(params: Record<string, string | number | null | undefined>): string {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== "") {
+      searchParams.set(key, String(value));
+    }
+  });
+  return searchParams.toString();
+}
+
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, init);
+
+    if (!response.ok) {
+      let detail = "";
+      try {
+        const data = (await response.json()) as { error?: string; message?: string };
+        detail = data.error || data.message || "";
+      } catch {
+        const text = await response.text();
+        detail = text.trim();
+      }
+      const suffix = detail ? ` - ${detail}` : "";
+      throw new Error(`API request failed (${response.status} ${response.statusText})${suffix}`);
+    }
+
+    return (await response.json()) as T;
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error("API unreachable. Ensure backend services are running and VITE_API_BASE_URL is correct.");
+    }
+    throw error;
   }
-  return response.json() as Promise<RegionFeatureCollection>;
+}
+
+export async function getRegions(): Promise<RegionFeatureCollection> {
+  return requestJson<RegionFeatureCollection>("/regions");
 }
 
 export async function getNDVITrends(
@@ -239,17 +278,8 @@ export async function getTrends(
   from: string,
   to: string
 ): Promise<ConsolidatedTrendsResponse> {
-  const params = new URLSearchParams({
-    regionId: String(regionId),
-    from,
-    to
-  });
-
-  const response = await fetch(`${API_BASE_URL}/trends?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch consolidated trends: ${response.status}`);
-  }
-  return response.json() as Promise<ConsolidatedTrendsResponse>;
+  const params = buildParams({ regionId, from, to });
+  return requestJson<ConsolidatedTrendsResponse>(`/trends?${params}`);
 }
 
 export async function getHealthMap(
@@ -258,18 +288,8 @@ export async function getHealthMap(
   to: string,
   metric: MapMetric
 ): Promise<HealthMapResponse> {
-  const params = new URLSearchParams({
-    regionId: String(regionId),
-    from,
-    to,
-    metric
-  });
-
-  const response = await fetch(`${API_BASE_URL}/health-map?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch health map: ${response.status}`);
-  }
-  return response.json() as Promise<HealthMapResponse>;
+  const params = buildParams({ regionId, from, to, metric });
+  return requestJson<HealthMapResponse>(`/health-map?${params}`);
 }
 
 export async function getNDVIStats(
@@ -277,17 +297,8 @@ export async function getNDVIStats(
   from: string,
   to: string
 ): Promise<NDVIStatResponse> {
-  const params = new URLSearchParams({
-    regionId: String(regionId),
-    from,
-    to
-  });
-
-  const response = await fetch(`${API_BASE_URL}/stats/ndvi?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch NDVI stats: ${response.status}`);
-  }
-  return response.json() as Promise<NDVIStatResponse>;
+  const params = buildParams({ regionId, from, to });
+  return requestJson<NDVIStatResponse>(`/stats/ndvi?${params}`);
 }
 
 export async function getNDWIStats(
@@ -295,15 +306,8 @@ export async function getNDWIStats(
   from?: string,
   to?: string
 ): Promise<NDWIStatResponse> {
-  const params = new URLSearchParams({ regionId: String(regionId) });
-  if (from) params.set("from", from);
-  if (to) params.set("to", to);
-
-  const response = await fetch(`${API_BASE_URL}/stats/ndwi?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch NDWI stats: ${response.status}`);
-  }
-  return response.json() as Promise<NDWIStatResponse>;
+  const params = buildParams({ regionId, from, to });
+  return requestJson<NDWIStatResponse>(`/stats/ndwi?${params}`);
 }
 
 export async function getLSTStats(
@@ -311,15 +315,8 @@ export async function getLSTStats(
   from?: string,
   to?: string
 ): Promise<LSTStatResponse> {
-  const params = new URLSearchParams({ regionId: String(regionId) });
-  if (from) params.set("from", from);
-  if (to) params.set("to", to);
-
-  const response = await fetch(`${API_BASE_URL}/stats/lst?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch LST stats: ${response.status}`);
-  }
-  return response.json() as Promise<LSTStatResponse>;
+  const params = buildParams({ regionId, from, to });
+  return requestJson<LSTStatResponse>(`/stats/lst?${params}`);
 }
 
 export async function getAlerts(
@@ -327,15 +324,8 @@ export async function getAlerts(
   from?: string,
   to?: string
 ): Promise<AlertResponse> {
-  const params = new URLSearchParams({ regionId: String(regionId) });
-  if (from) params.set("from", from);
-  if (to) params.set("to", to);
-
-  const response = await fetch(`${API_BASE_URL}/alerts?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch alerts: ${response.status}`);
-  }
-  return response.json() as Promise<AlertResponse>;
+  const params = buildParams({ regionId, from, to });
+  return requestJson<AlertResponse>(`/alerts?${params}`);
 }
 
 export async function getImpactMetrics(
@@ -343,17 +333,8 @@ export async function getImpactMetrics(
   from: string,
   to: string
 ): Promise<ImpactMetricsResponse> {
-  const params = new URLSearchParams({
-    regionId: String(regionId),
-    from,
-    to
-  });
-
-  const response = await fetch(`${API_BASE_URL}/impact-metrics?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch impact metrics: ${response.status}`);
-  }
-  return response.json() as Promise<ImpactMetricsResponse>;
+  const params = buildParams({ regionId, from, to });
+  return requestJson<ImpactMetricsResponse>(`/impact-metrics?${params}`);
 }
 
 export async function getAdvisory(
@@ -361,56 +342,30 @@ export async function getAdvisory(
   from: string,
   to: string
 ): Promise<AdvisoryResponse> {
-  const params = new URLSearchParams({
-    regionId: String(regionId),
-    from,
-    to
-  });
-
-  const response = await fetch(`${API_BASE_URL}/advisory?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch advisory: ${response.status}`);
-  }
-  return response.json() as Promise<AdvisoryResponse>;
+  const params = buildParams({ regionId, from, to });
+  return requestJson<AdvisoryResponse>(`/advisory?${params}`);
 }
 
 export async function submitJob(
   jobType: JobType,
   payload: { region_id: number; start_date: string; end_date: string }
 ): Promise<JobSubmitResponse> {
-  const response = await fetch(`${API_BASE_URL}/jobs/${jobType}`, {
+  return requestJson<JobSubmitResponse>(`/jobs/${jobType}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify(payload)
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to submit ${jobType.toUpperCase()} job: ${response.status}`);
-  }
-  return response.json() as Promise<JobSubmitResponse>;
 }
 
 export async function getJobStatus(jobType: JobType, jobId: string): Promise<JobStatusResponse> {
-  const response = await fetch(`${API_BASE_URL}/jobs/${jobType}/${jobId}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${jobType.toUpperCase()} job status: ${response.status}`);
-  }
-  return response.json() as Promise<JobStatusResponse>;
+  return requestJson<JobStatusResponse>(`/jobs/${jobType}/${jobId}`);
 }
 
 async function clearByPath(path: string, regionId: number, from: string, to: string): Promise<ClearResponse> {
-  const params = new URLSearchParams({
-    regionId: String(regionId),
-    from,
-    to
-  });
-  const response = await fetch(`${API_BASE_URL}${path}?${params.toString()}`, { method: "DELETE" });
-  if (!response.ok) {
-    throw new Error(`Failed to clear data: ${response.status}`);
-  }
-  return response.json() as Promise<ClearResponse>;
+  const params = buildParams({ regionId, from, to });
+  return requestJson<ClearResponse>(`${path}?${params}`, { method: "DELETE" });
 }
 
 export async function clearNDVIStats(regionId: number, from: string, to: string): Promise<ClearResponse> {

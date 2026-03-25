@@ -44,6 +44,9 @@ export default function ImpactPlaygroundPage() {
       </div>
 
       {error && <p className="error">{error}</p>}
+      {!loading && !error && !data && (
+        <p className="meta">No impact payload loaded yet. Click "Load Impact".</p>
+      )}
 
       {data && (
         <>
