@@ -54,7 +54,7 @@ export default function TrendsPlaygroundPage() {
   return (
     <div className="page">
       <h2>Trends Playground</h2>
-      <p>Fetch and inspect consolidated trend windows (minimal UI first).</p>
+      <p>Fetch and inspect consolidated trend windows.</p>
 
       <div className="controlsRow">
         <label>
