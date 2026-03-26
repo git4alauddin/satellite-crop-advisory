@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import L from "leaflet";
 import { GeoJSON, MapContainer, TileLayer } from "react-leaflet";
+import { useMap } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
 import {
   getAdvisory,
@@ -19,6 +21,21 @@ import {
 } from "../../api";
 
 const defaultCenter: LatLngExpression = [30.9, 75.85];
+
+function FitToRegions({ data }: { data: RegionFeatureCollection | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!data || !data.features?.length) return;
+    const layer = L.geoJSON(data as unknown as GeoJSON.GeoJsonObject);
+    const bounds = layer.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [24, 24] });
+    }
+  }, [data, map]);
+
+  return null;
+}
 
 export default function DashboardDraftPage() {
   const [from, setFrom] = useState("2025-01-01");
@@ -160,6 +177,7 @@ export default function DashboardDraftPage() {
           <h3>Map</h3>
           <div className="mapWrap">
             <MapContainer center={defaultCenter} zoom={10} className="map">
+              <FitToRegions data={regions} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

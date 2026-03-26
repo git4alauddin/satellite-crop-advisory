@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getAdvisory, type AdvisoryResponse } from "../../api";
 
 export default function AdvisoryPlaygroundPage() {
@@ -25,6 +25,10 @@ export default function AdvisoryPlaygroundPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    void loadAdvisory();
+  }, []);
 
   return (
     <div className="page">

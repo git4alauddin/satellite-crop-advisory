@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getImpactMetrics, type ImpactMetricsResponse } from "../../api";
 
 export default function ImpactPlaygroundPage() {
@@ -25,6 +25,10 @@ export default function ImpactPlaygroundPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    void loadImpact();
+  }, []);
 
   return (
     <div className="page">

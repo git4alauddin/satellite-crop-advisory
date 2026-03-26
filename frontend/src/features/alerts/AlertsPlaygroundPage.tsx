@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   clearAlerts,
   getAlerts,
@@ -53,6 +53,10 @@ export default function AlertsPlaygroundPage() {
       setClearing(false);
     }
   }
+
+  useEffect(() => {
+    void loadAlerts();
+  }, []);
 
   return (
     <div className="page">

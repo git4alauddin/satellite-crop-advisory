@@ -116,7 +116,13 @@ git clone https://github.com/git4alauddin/satellite-crop-advisory
 cd satellite-crop-advisory
 ```
 
-### 2) Earth Engine Auth (Host machine)
+### 2) GCP + Earth Engine Setup
+1. Create or select a GCP project.
+2. In Google Cloud Console, enable API for that project:
+   - `Earth Engine API` (required)
+   - `Cloud Resource Manager API` (optional, useful for some project/account metadata checks)
+3. Use this project ID as your `GEE_PROJECT_ID`.
+4. Authenticate Earth Engine from your machine:
 ```bash
 earthengine authenticate
 ```
@@ -141,24 +147,21 @@ This starts:
 - API health: `http://localhost:4000/health`
 - Processor health: `http://localhost:8000/health`
 
-### 6) Optional Manual DB Migration (only if needed)
-PowerShell (Windows):
-```powershell
-Get-ChildItem db/init/*.sql | Sort-Object Name | ForEach-Object {
-  Get-Content $_.FullName -Raw | docker exec -i sca_postgis psql -U sca_user -d sca_geo
-}
-```
-
-Bash (Linux/macOS):
+### 6) Quick Commands (for daily use)
 ```bash
-for f in $(ls db/init/*.sql | sort); do
-  cat "$f" | docker exec -i sca_postgis psql -U sca_user -d sca_geo
-done
+# Start full stack
+docker compose up -d --build
+
+# If frontend changes are not reflected
+docker compose up -d --build frontend
+# (if still stale, hard refresh browser: Ctrl+F5)
+
+# Reset deterministic UI demo data
+npm run seed:ui-demo
 ```
 
 ## Milestones Ahead
-- Final UI polish and presentation-quality dashboard refinement
-- Integrate realistic region boundaries (official shapefiles/GeoJSON)
-- Add deeper automated tests (integration + negative-path + performance)
-- Add CI pipeline for automated build/test checks on PRs
-- Add deployment hardening and production runbook
+- Final dashboard polish for presentation-ready UX
+- Expand to additional official region boundaries (beyond current Ludhiana demo region)
+- Strengthen reliability with deeper automated tests (integration + negative paths)
+- Add CI + deployment hardening (required checks, build pipeline, runbook)

@@ -1,0 +1,7 @@
+{
+  "name": "satellite-crop-advisory",
+  "private": true,
+  "scripts": {
+    "seed:ui-demo": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Get-Content db/tools/seed_ui_demo.sql -Raw | docker exec -i sca_postgis psql -U sca_user -d sca_geo\""
+  }
+}

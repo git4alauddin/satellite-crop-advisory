@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -38,6 +38,10 @@ export default function TrendsPlaygroundPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    void loadTrends();
+  }, []);
 
   const latest = rows.length > 0 ? rows[rows.length - 1] : null;
   const chartData = useMemo(

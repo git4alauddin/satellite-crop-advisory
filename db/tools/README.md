@@ -43,3 +43,13 @@ Custom district:
 ```powershell
 python db/tools/set_official_demo_region.py --district Hisar
 ```
+
+## UI demo seed (optional)
+
+Use this when you want stable data for UI work (trends, alerts, advisory, impact) without running live jobs each time.
+
+```powershell
+Get-Content db/tools/seed_ui_demo.sql -Raw | docker exec -i sca_postgis psql -U sca_user -d sca_geo
+```
+
+This upserts deterministic windows for `region_id=1` and related alerts.
