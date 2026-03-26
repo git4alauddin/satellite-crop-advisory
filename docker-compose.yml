@@ -34,8 +34,16 @@ services:
       DATABASE_URL: postgresql://sca_user:sca_pass@postgis:5432/sca_geo
     volumes:
       - ./db/init:/migrations:ro
-      - ./db/tools/apply-migrations.sh:/scripts/apply-migrations.sh:ro
-    command: ["sh", "/scripts/apply-migrations.sh"]
+    command:
+      - sh
+      - -ec
+      - |
+        echo "Applying DB migrations from /migrations ..."
+        for file in /migrations/*.sql; do
+          echo " -> $$file"
+          psql "$$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$$file"
+        done
+        echo "DB migrations applied successfully."
     restart: "no"
 
   processor:
