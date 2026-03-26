@@ -10,6 +10,11 @@ services:
       - "5432:5432"
     volumes:
       - postgis_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sca_user -d sca_geo"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   mongo:
     image: mongo:7
@@ -18,6 +23,73 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+
+  db-migrate:
+    image: postgres:16-alpine
+    container_name: sca_db_migrate
+    depends_on:
+      postgis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://sca_user:sca_pass@postgis:5432/sca_geo
+    volumes:
+      - ./db/init:/migrations:ro
+      - ./db/tools/apply-migrations.sh:/scripts/apply-migrations.sh:ro
+    command: ["sh", "/scripts/apply-migrations.sh"]
+    restart: "no"
+
+  processor:
+    build:
+      context: ./processor
+    container_name: sca_processor
+    depends_on:
+      postgis:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    environment:
+      GEE_PROJECT_ID: ${GEE_PROJECT_ID:-}
+      PGHOST: postgis
+      PGPORT: 5432
+      PGUSER: sca_user
+      PGPASSWORD: sca_pass
+      PGDATABASE: sca_geo
+    volumes:
+      - ${GEE_CREDENTIALS_DIR:-./.gee_credentials}:/root/.config/earthengine:ro
+    ports:
+      - "8000:8000"
+
+  api:
+    build:
+      context: ./api
+    container_name: sca_api
+    depends_on:
+      postgis:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+      processor:
+        condition: service_started
+    environment:
+      PORT: 4000
+      PGHOST: postgis
+      PGPORT: 5432
+      PGUSER: sca_user
+      PGPASSWORD: sca_pass
+      PGDATABASE: sca_geo
+      PROCESSOR_BASE_URL: http://processor:8000
+    ports:
+      - "4000:4000"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: sca_frontend
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "5173:5173"
 
 volumes:
   postgis_data:

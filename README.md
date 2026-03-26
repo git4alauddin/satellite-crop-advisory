@@ -36,55 +36,58 @@ Build a system that converts raw satellite imagery into simple, actionable crop-
 ## Repository Structure
 ```text
 satellite-crop-advisory/
-├── api/                                  # Express + TypeScript API (client-facing backend contract)
-│   ├── src/
-│   │   ├── server.ts                     # API process entrypoint (loads env and starts server)
-│   │   ├── app.ts                        # Express app + middleware + route registration
-│   │   ├── db.ts                         # PostgreSQL connection pool
-│   │   ├── routes/                       # URL route mapping layer
-│   │   ├── controllers/                  # Request validation + response shaping
-│   │   ├── services/                     # Integration/business helpers (processor proxy, jobs, health, regions)
-│   │   └── repositories/                 # SQL access modules (currently regions)
-│   └── scripts/
-│       └── smoke-test.mjs                # API smoke-check script
-├── processor/                            # FastAPI compute service (satellite jobs + rule engine)
-│   └── src/
-│       ├── main.py                       # Processor app entrypoint + router wiring
-│       ├── ndvi_service.py               # Sentinel-2 NDVI compute helpers
-│       ├── ndwi_service.py               # Sentinel-2 NDWI compute helpers
-│       ├── lst_service.py                # MODIS LST compute helpers
-│       ├── core/
-│       │   ├── config.py                 # Env/config constants (CORS, GEE project)
-│       │   └── db.py                     # Postgres connection helper
-│       ├── schemas/
-│       │   └── jobs.py                   # Pydantic request schema(s)
-│       ├── repositories/                 # DB read/write functions (regions, index_stats, alerts)
-│       ├── services/                     # Rules, job workers, job stores, stats payload shaping
-│       └── routers/                      # Processor endpoints (/health, /jobs/*, /stats/*, /alerts)
-├── frontend/                             # React + Vite playground and dashboard UI
-│   └── src/
-│       ├── main.tsx                      # Frontend bootstrap
-│       ├── App.tsx                       # Route shell and page switching
-│       ├── api.ts                        # Typed API client contracts
-│       ├── styles.css                    # Shared frontend styles
-│       ├── components/
-│       │   └── PlaceholderPage.tsx       # Generic placeholder component
-│       ├── lib/
-│       │   └── navigation.ts             # Route constants + navigation helper
-│       └── features/                     # Feature-wise playground pages
-│           ├── hub/                      # Component hub landing page
-│           ├── map/                      # Health map and boundaries
-│           ├── jobs/                     # Run NDVI/NDWI/LST jobs
-│           ├── trends/                   # Trends visualization
-│           ├── alerts/                   # Alerts table/controls
-│           ├── impact/                   # Impact metrics view
-│           ├── advisory/                 # Advisory messages view
-│           └── dashboard/                # Combined dashboard draft
-├── db/
-│   ├── init/                             # Ordered schema/migration SQL files (001..010)
-│   └── tools/                            # GeoJSON import and official boundary helper scripts
-├── docker-compose.yml                    # Local PostGIS + MongoDB services
-└── README.md                             # Project overview, progress, and runbook
+|-- api/                                  # Express + TypeScript API (client-facing backend contract)
+|   |-- src/
+|   |   |-- server.ts                     # API process entrypoint (loads env and starts server)
+|   |   |-- app.ts                        # Express app + middleware + route registration
+|   |   |-- db.ts                         # PostgreSQL connection pool
+|   |   |-- routes/                       # URL route mapping layer
+|   |   |-- controllers/                  # Request validation + response shaping
+|   |   |-- services/                     # Integration/business helpers (processor proxy, jobs, health, regions)
+|   |   `-- repositories/                 # SQL access modules (currently regions)
+|   `-- scripts/
+|       `-- smoke-test.mjs                # API smoke-check script
+|-- processor/                            # FastAPI compute service (satellite jobs + rule engine)
+|   |-- Dockerfile
+|   `-- src/
+|       |-- main.py                       # Processor app entrypoint + router wiring
+|       |-- ndvi_service.py               # Sentinel-2 NDVI compute helpers
+|       |-- ndwi_service.py               # Sentinel-2 NDWI compute helpers
+|       |-- lst_service.py                # MODIS LST compute helpers
+|       |-- core/
+|       |   |-- config.py                 # Env/config constants (CORS, GEE project)
+|       |   `-- db.py                     # Postgres connection helper
+|       |-- schemas/
+|       |   `-- jobs.py                   # Pydantic request schema(s)
+|       |-- repositories/                 # DB read/write functions (regions, index_stats, alerts)
+|       |-- services/                     # Rules, job workers, job stores, stats payload shaping
+|       `-- routers/                      # Processor endpoints (/health, /jobs/*, /stats/*, /alerts)
+|-- frontend/                             # React + Vite playground and dashboard UI
+|   |-- Dockerfile
+|   `-- src/
+|       |-- main.tsx                      # Frontend bootstrap
+|       |-- App.tsx                       # Route shell and page switching
+|       |-- api.ts                        # Typed API client contracts
+|       |-- styles.css                    # Shared frontend styles
+|       |-- components/
+|       |   `-- PlaceholderPage.tsx       # Generic placeholder component
+|       |-- lib/
+|       |   `-- navigation.ts             # Route constants + navigation helper
+|       `-- features/                     # Feature-wise playground pages
+|           |-- hub/                      # Component hub landing page
+|           |-- map/                      # Health map and boundaries
+|           |-- jobs/                     # Run NDVI/NDWI/LST jobs
+|           |-- trends/                   # Trends visualization
+|           |-- alerts/                   # Alerts table/controls
+|           |-- impact/                   # Impact metrics view
+|           |-- advisory/                 # Advisory messages view
+|           `-- dashboard/                # Combined dashboard draft
+|-- db/
+|   |-- init/                             # Ordered schema/migration SQL files (001..010)
+|   `-- tools/                            # GeoJSON import and official boundary helper scripts
+|-- .env.example                          # Root env template for Dockerized stack
+|-- docker-compose.yml                    # Full local stack (PostGIS, Mongo, API, Processor, Frontend)
+`-- README.md                             # Project overview, progress, and runbook
 ```
 
 ## Milestone Breakdown
@@ -105,6 +108,7 @@ satellite-crop-advisory/
 - Node.js + npm
 - Python 3.11+
 - Git
+- Earth Engine CLI (`earthengine`)
 
 ### 1) Clone
 ```bash
@@ -112,13 +116,32 @@ git clone https://github.com/git4alauddin/satellite-crop-advisory
 cd satellite-crop-advisory
 ```
 
-### 2) Start Infrastructure
+### 2) Earth Engine Auth (Host machine)
 ```bash
-docker compose up -d
+earthengine authenticate
 ```
 
-### 3) Initialize Database Schema
+### 3) Configure Environment
+Create root `.env` from `.env.example` and set:
+- `GEE_PROJECT_ID` (your GCP project ID)
+- `GEE_CREDENTIALS_DIR` (host path containing Earth Engine credentials)
 
+### 4) Start Full Stack (Recommended)
+```bash
+docker compose up --build
+```
+
+This starts:
+- `postgis`, `mongo`
+- `db-migrate` (auto-applies `db/init/*.sql`)
+- `processor`, `api`, `frontend`
+
+### 5) Access
+- Frontend: `http://localhost:5173`
+- API health: `http://localhost:4000/health`
+- Processor health: `http://localhost:8000/health`
+
+### 6) Optional Manual DB Migration (only if needed)
 PowerShell (Windows):
 ```powershell
 Get-ChildItem db/init/*.sql | Sort-Object Name | ForEach-Object {
@@ -132,59 +155,6 @@ for f in $(ls db/init/*.sql | sort); do
   cat "$f" | docker exec -i sca_postgis psql -U sca_user -d sca_geo
 done
 ```
-
-### 4) Start Processor (Google Earth Engine Prerequisite)
-Before starting the processor, make sure Earth Engine is configured:
-
-1. Create/select a GCP project.
-2. Enable required APIs in that project:
-   - `Earth Engine API`
-   - `IAM Service Account Credentials API` (if using service account auth)
-3. Ensure your Earth Engine account/project access is approved.
-4. Set project ID in `processor/.env`:
-   ```env
-   GEE_PROJECT_ID=your-gcp-project-id
-   ```
-5. Authenticate Earth Engine on your machine:
-   ```bash
-   earthengine authenticate
-   ```
-
-Then start processor:
-```bash
-cd processor
-python -m venv .venv
-# Windows
-.\.venv\Scripts\Activate.ps1
-# Linux/macOS
-# source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn src.main:app --reload --port 8000
-```
-
-Quick verify:
-- `http://localhost:8000/health` should return `status: ok`
-- If GEE is not configured, job endpoints fail with:
-  - `GEE_PROJECT_ID is not configured`
-
-### 5) Start API
-```bash
-cd api
-npm install
-npm run dev
-```
-
-### 6) Start Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### 7) Access
-- Frontend: `http://localhost:5173`
-- API health: `http://localhost:4000/health`
-- Processor health: `http://localhost:8000/health`
 
 ## Milestones Ahead
 - Final UI polish and presentation-quality dashboard refinement
