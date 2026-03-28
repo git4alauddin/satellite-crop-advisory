@@ -48,6 +48,7 @@ export default function DashboardDraftPage() {
   const [to, setTo] = useState("2025-05-16");
   const [metric, setMetric] = useState<MapMetric>("ndvi");
   const [loading, setLoading] = useState(false);
+  const [mapLoading, setMapLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [regions, setRegions] = useState<RegionFeatureCollection | null>(null);
@@ -56,6 +57,7 @@ export default function DashboardDraftPage() {
   const [impact, setImpact] = useState<ImpactMetricsResponse | null>(null);
   const [advisory, setAdvisory] = useState<AdvisoryResponse | null>(null);
   const requestSeqRef = useRef(0);
+  const mapRequestSeqRef = useRef(0);
 
   async function loadAll(metricOverride?: MapMetric) {
     const requestId = ++requestSeqRef.current;
@@ -88,6 +90,22 @@ export default function DashboardDraftPage() {
     } finally {
       if (requestId !== requestSeqRef.current) return;
       setLoading(false);
+    }
+  }
+
+  async function loadMapOnly(metricOverride: MapMetric) {
+    const requestId = ++mapRequestSeqRef.current;
+    setMapLoading(true);
+    try {
+      const mapRes = await getHealthMap(1, from, to, metricOverride);
+      if (requestId !== mapRequestSeqRef.current) return;
+      setRegions(mapRes.data);
+    } catch (e) {
+      if (requestId !== mapRequestSeqRef.current) return;
+      setError(e instanceof Error ? e.message : "Failed to load map data");
+    } finally {
+      if (requestId !== mapRequestSeqRef.current) return;
+      setMapLoading(false);
     }
   }
 
@@ -175,6 +193,7 @@ export default function DashboardDraftPage() {
   const trendColor = metric === "ndvi" ? "#22c55e" : metric === "ndwi" ? "#0ea5e9" : "#f97316";
   const currentMetricValue =
     metric === "ndvi" ? latest?.mean_ndvi : metric === "ndwi" ? latest?.mean_ndwi : latest?.mean_lst_c;
+  const chartLoading = loading && trends.length === 0;
   const mapFeature = regions?.features?.[0]?.properties;
   const mapLayerKey = [
     metric,
@@ -260,6 +279,7 @@ export default function DashboardDraftPage() {
       <div className="dashboardMain">
         <section className="card mapCard">
           <h3>Map</h3>
+          {mapLoading && <p className="meta">Updating map...</p>}
           <div className="buttonGroup">
             <button
               type="button"
@@ -267,7 +287,7 @@ export default function DashboardDraftPage() {
               onClick={() => {
                 const next: MapMetric = "ndvi";
                 setMetric(next);
-                void loadAll(next);
+                void loadMapOnly(next);
               }}
             >
               NDVI
@@ -278,7 +298,7 @@ export default function DashboardDraftPage() {
               onClick={() => {
                 const next: MapMetric = "ndwi";
                 setMetric(next);
-                void loadAll(next);
+                void loadMapOnly(next);
               }}
             >
               NDWI
@@ -289,7 +309,7 @@ export default function DashboardDraftPage() {
               onClick={() => {
                 const next: MapMetric = "lst";
                 setMetric(next);
-                void loadAll(next);
+                void loadMapOnly(next);
               }}
             >
               LST
@@ -326,7 +346,7 @@ export default function DashboardDraftPage() {
         <section className="card">
           <h3>Trend ({metric.toUpperCase()}: {currentMetricValue ?? "N/A"})</h3>
           <div className="chartSimple">
-            {loading ? (
+            {chartLoading ? (
               <p className="meta">Loading trend...</p>
             ) : trendChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={240}>
