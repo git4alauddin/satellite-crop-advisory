@@ -6,12 +6,14 @@ export type RouteKey =
   | "/playground/alerts"
   | "/playground/impact"
   | "/playground/advisory"
+  | "/playground/database"
   | "/dashboard";
 
 export const ROUTES: { path: RouteKey; label: string; description: string }[] = [
   { path: "/playground/map", label: "Map", description: "Boundary + metric coloring + source label" },
   { path: "/playground/jobs", label: "Jobs", description: "Run NDVI/NDWI/LST jobs and poll status" },
   { path: "/playground/trends", label: "Trends", description: "NDVI/NDWI/LST trend tables and chart" },
+  { path: "/playground/database", label: "Database", description: "Tables, row counts, and latest records" },
   { path: "/playground/alerts", label: "Alerts", description: "Alert list, severity view, clear workflow" },
   { path: "/playground/impact", label: "Impact", description: "Impact metrics cards and coverage summary" },
   { path: "/playground/advisory", label: "Advisory", description: "Human-readable advisory text module" },

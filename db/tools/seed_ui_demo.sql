@@ -22,7 +22,7 @@ WHERE region_id = 1;
 -- S7: anomaly NULL case (baseline unavailable style)
 -- S8: healthy recovery window
 -- S9: no-stats window is tested by choosing dates outside these ranges
--- S10: latest window healthy to validate latest-observation cards
+-- S10: latest window mixed severities (healthy/stressed/critical)
 INSERT INTO index_stats (
     region_id,
     date_start,
@@ -59,8 +59,8 @@ VALUES
     (1, '2025-04-01', '2025-04-15', 11, 11, 11, 5, 0.33, -0.35, 26.0, NULL, NULL, NULL, 'critical', 'critical', 'critical', NOW() - INTERVAL '3 days'),
     -- S8 (recovery)
     (1, '2025-04-16', '2025-04-30', 12, 12, 12, 6, 0.49, -0.21, 22.8, -0.08, -0.04,  1.1, 'stressed', 'stressed', 'stressed', NOW() - INTERVAL '2 days'),
-    -- S10 (latest healthy)
-    (1, '2025-05-01', '2025-05-15', 13, 13, 13, 6, 0.61, -0.14, 20.1,  0.05,  0.02, -0.5, 'healthy',  'healthy',  'healthy',  NOW() - INTERVAL '1 day')
+    -- S10 (latest mixed severity)
+    (1, '2025-05-01', '2025-05-15', 13, 13, 13, 6, 0.58, -0.22, 26.6,  0.03, -0.07,  2.7, 'healthy',  'stressed', 'critical', NOW() - INTERVAL '1 day')
 ON CONFLICT (region_id, date_start, date_end)
 DO UPDATE SET
     source_image_count = EXCLUDED.source_image_count,
@@ -83,6 +83,7 @@ DO UPDATE SET
 -- A2: single-alert window
 -- A3: multi-alert same window
 -- A4: mixed severities
+-- A5: latest window has active stressed + critical alerts for UI demo
 INSERT INTO alerts (
     region_id,
     metric,
@@ -98,7 +99,9 @@ VALUES
     (1, 'ndvi', 'critical', 'Vegetation index crossed critical drop threshold.',                  '2025-02-16', '2025-02-28', '{"rule":"ndvi_drop","threshold":-0.20}', NOW() - INTERVAL '6 days'),
     (1, 'lst',  'critical', 'Surface temperature rose significantly above baseline.',             '2025-02-16', '2025-02-28', '{"rule":"lst_rise","threshold_c":2.0}', NOW() - INTERVAL '6 days'),
     (1, 'ndwi', 'critical', 'Water stress remains severe in this period.',                        '2025-03-01', '2025-03-15', '{"rule":"ndwi_drop","threshold":-0.10}', NOW() - INTERVAL '5 days'),
-    (1, 'ndvi', 'stressed', 'Vegetation recovering but still under expected seasonal level.',     '2025-04-16', '2025-04-30', '{"rule":"ndvi_recovery"}', NOW() - INTERVAL '2 days')
+    (1, 'ndvi', 'stressed', 'Vegetation recovering but still under expected seasonal level.',     '2025-04-16', '2025-04-30', '{"rule":"ndvi_recovery"}', NOW() - INTERVAL '2 days'),
+    (1, 'ndwi', 'stressed', 'Moisture is below seasonal expectation in the current window.',      '2025-05-01', '2025-05-15', '{"rule":"ndwi_drop","threshold":-0.05}', NOW() - INTERVAL '1 day'),
+    (1, 'lst',  'critical', 'Heat stress is critical in the current window.',                     '2025-05-01', '2025-05-15', '{"rule":"lst_rise","threshold_c":2.0}', NOW() - INTERVAL '1 day')
 ON CONFLICT (region_id, metric, date_start, date_end)
 DO UPDATE SET
     severity = EXCLUDED.severity,

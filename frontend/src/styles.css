@@ -21,24 +21,80 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 14px 16px;
   background: #ffffff;
   border-bottom: 1px solid #d9e5d9;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .header h1 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
-.header button {
-  border: 1px solid #1f6f43;
+.headerBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerState {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #355445;
+  background: #f3faf4;
+  border: 1px solid #cde6d0;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.headerState i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+  display: inline-block;
+}
+
+.headerNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.navPill {
+  border: 1px solid #9eb9a2;
+  background: #ffffff;
+  color: #2b4734;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.86rem;
+}
+
+.navPill.active {
+  border-color: #1f6f43;
   background: #1f6f43;
   color: #ffffff;
+}
+
+.headerContext {
+  font-size: 0.8rem;
+  color: #4f6b58;
+  background: #f8fbf8;
+  border: 1px solid #d7e3d8;
   border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
+  padding: 6px 10px;
 }
 
 .page {
@@ -117,6 +173,13 @@ body {
   padding: 6px 8px;
 }
 
+.controlsRow select {
+  border: 1px solid #c7dcc8;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #ffffff;
+}
+
 .controlsRow button {
   border: 1px solid #9eb9a2;
   background: #ffffff;
@@ -190,6 +253,40 @@ body {
   margin-bottom: 10px;
 }
 
+.chartPanel {
+  position: relative;
+}
+
+.chartPanel.isLoading {
+  opacity: 0.92;
+}
+
+.chartOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border-radius: 8px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cfe1cf;
+  border-top-color: #1f6f43;
+  border-radius: 999px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .tableWrap {
   border: 1px solid #d7e3d8;
   border-radius: 8px;
@@ -239,12 +336,144 @@ body {
 
 .listBlock li {
   margin-bottom: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.bulletDot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  margin-top: 5px;
+  flex: 0 0 9px;
+}
+
+.bulletDot.healthy {
+  background: #22c55e;
+}
+
+.bulletDot.stressed {
+  background: #f59e0b;
+}
+
+.bulletDot.critical {
+  background: #ef4444;
+}
+
+.bulletDot.neutral {
+  background: #94a3b8;
 }
 
 .dashboardGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.dashboardMain {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dashboardTop {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mapCard .map {
+  height: 480px;
+}
+
+.topStatusGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.miniIndexCard h3 {
+  margin-bottom: 6px;
+}
+
+.miniIndexCard .meta {
+  margin: 0 0 6px;
+}
+
+.miniIndexCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 130px;
+}
+
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.statusChip.healthy {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusChip.stressed {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusChip.critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusChip.none,
+.statusChip.neutral {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.mapLegend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #355445;
+}
+
+.mapLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mapLegend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.topAdvisoryCard .listBlock li {
+  align-items: flex-start;
+}
+
+.topAdvisoryCard .listBlock .advisoryText {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card {
@@ -281,6 +510,15 @@ body {
 }
 
 @media (max-width: 768px) {
+  .header {
+    align-items: stretch;
+  }
+
+  .headerContext {
+    width: 100%;
+    text-align: center;
+  }
+
   .map {
     height: 380px;
   }
@@ -294,6 +532,18 @@ body {
   }
 
   .dashboardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboardMain {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboardTop {
+    grid-template-columns: 1fr;
+  }
+
+  .topStatusGrid {
     grid-template-columns: 1fr;
   }
 }
