@@ -41,10 +41,12 @@ satellite-crop-advisory/
 |   |   |-- server.ts                     # API process entrypoint (loads env and starts server)
 |   |   |-- app.ts                        # Express app + middleware + route registration
 |   |   |-- db.ts                         # PostgreSQL connection pool
+|   |   |-- docs/
+|   |   |   `-- openapi.ts               # OpenAPI specification used by Swagger UI
 |   |   |-- routes/                       # URL route mapping layer
 |   |   |-- controllers/                  # Request validation + response shaping
 |   |   |-- services/                     # Integration/business helpers (processor proxy, jobs, health, regions)
-|   |   `-- repositories/                 # SQL access modules (currently regions)
+|   |   `-- repositories/                 # SQL access modules
 |   `-- scripts/
 |       `-- smoke-test.mjs                # API smoke-check script
 |-- processor/                            # FastAPI compute service (satellite jobs + rule engine)
@@ -78,6 +80,7 @@ satellite-crop-advisory/
 |           |-- map/                      # Health map and boundaries
 |           |-- jobs/                     # Run NDVI/NDWI/LST jobs
 |           |-- trends/                   # Trends visualization
+|           |-- database/                 # Data sanity view (table counts + latest rows)
 |           |-- alerts/                   # Alerts table/controls
 |           |-- impact/                   # Impact metrics view
 |           |-- advisory/                 # Advisory messages view
