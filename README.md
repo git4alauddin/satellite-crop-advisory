@@ -1,32 +1,25 @@
-<h1 align="center">
-  <span style="color:#14532d; font-size:56px; font-weight:900; letter-spacing:0.4px; font-family:'Georgia', 'Times New Roman', serif;">
-    Krishi Drishti
-  </span>
-</h1>
+# **Krishi Drishti**
 
-<p align="center">
-  <img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=white" alt="React" />
-  <img src="https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white" alt="Node.js" />
-  <img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/PostGIS-2F5D50?logo=postgresql&logoColor=white" alt="PostGIS" />
-  <img src="https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white" alt="MongoDB" />
-  <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker" />
-</p>
 
-<p align="center"><em>Satellite-Based Crop Health & Resource Advisory System</em></p>
+
+*Satellite-Based Crop Health & Resource Advisory System*
 
 ## Team
+
 **Team Name:** MASY Crops  
 **Members:**
+
 - Yazdan Irfan
 - Syeda Saniya Sadaf Syed Ishaque
 - Md Alauddin Ansari
 - Mainak Mondal
 
 ## Problem Statement
+
 Build a system that converts raw satellite imagery into simple, actionable crop-health advisories through geospatial processing, temporal analysis, and dashboard insights.
 
 ## Approach
+
 - Ingest and preprocess satellite data at region level
 - Compute NDVI, NDWI, and LST indicators
 - Compare current period against historical baseline (anomaly)
@@ -34,6 +27,7 @@ Build a system that converts raw satellite imagery into simple, actionable crop-
 - Expose insights through APIs and visualize in a farmer-friendly UI
 
 ## Repository Structure
+
 ```text
 satellite-crop-advisory/
 |-- api/                                  # Express + TypeScript API (client-facing backend contract)
@@ -86,27 +80,33 @@ satellite-crop-advisory/
 |           |-- advisory/                 # Advisory messages view
 |           `-- dashboard/                # Combined dashboard draft
 |-- db/
-|   |-- init/                             # Ordered schema/migration SQL files (001..010)
-|   `-- tools/                            # GeoJSON import and official boundary helper scripts
+|   |-- init/                             # Ordered schema/migration SQL files (001..011)
+|   `-- tools/                            # Migration helper + GeoJSON import + demo seed utilities
+|-- package.json                          # Root helper scripts (for example: seed:ui-demo)
+|-- package-lock.json                     # Root lockfile
 |-- .env.example                          # Root env template for Dockerized stack
 |-- docker-compose.yml                    # Full local stack (PostGIS, Mongo, API, Processor, Frontend)
 `-- README.md                             # Project overview, progress, and runbook
 ```
 
 ## Milestone Breakdown
-| Milestone Area | Scope | Status |
-|---|---|---|
-| Data Ingestion & Preprocessing | Sentinel-2 + MODIS fetch, cloud filtering, region clipping | ![done](https://img.shields.io/badge/done-22c55e) |
-| Core Index Engine | NDVI, NDWI, LST computation and persistence | ![done](https://img.shields.io/badge/done-22c55e) |
-| Context Layer | Baseline lookup, anomaly calculation, severity classification | ![done](https://img.shields.io/badge/done-22c55e) |
-| Temporal Intelligence | Multi-window comparison and seasonal trend enhancement | ![done](https://img.shields.io/badge/done-22c55e) |
-| Advisory & Alerts | Alert rules, alert storage, alert API, alert UI panel | ![done](https://img.shields.io/badge/done-22c55e) |
-| Dashboard Experience | Consistent NDVI/NDWI/LST rendering and UX polish | ![in-progress](https://img.shields.io/badge/in--progress-f59e0b) |
-| Validation & Reliability | Field validation narrative, tests, CI/deployment hardening | ![in-progress](https://img.shields.io/badge/in--progress-f59e0b) |
+
+
+| Milestone Area                 | Scope                                                         | Status      |
+| ------------------------------ | ------------------------------------------------------------- | ----------- |
+| Data Ingestion & Preprocessing | Sentinel-2 + MODIS fetch, cloud filtering, region clipping    | done        |
+| Core Index Engine              | NDVI, NDWI, LST computation and persistence                   | done        |
+| Context Layer                  | Baseline lookup, anomaly calculation, severity classification | done        |
+| Temporal Intelligence          | Multi-window comparison and seasonal trend enhancement        | done        |
+| Advisory & Alerts              | Alert rules, alert storage, alert API, alert UI panel         | done        |
+| Dashboard Experience           | Consistent NDVI/NDWI/LST rendering and UX polish              | in-progress |
+| Validation & Reliability       | Field validation narrative, tests, CI/deployment hardening    | in-progress |
+
 
 ## Setup & Run
 
 ### Prerequisites
+
 - Docker Desktop
 - Node.js + npm
 - Python 3.11+
@@ -114,43 +114,52 @@ satellite-crop-advisory/
 - Earth Engine CLI (`earthengine`)
 
 ### 1) Clone
+
 ```bash
 git clone https://github.com/git4alauddin/satellite-crop-advisory
 cd satellite-crop-advisory
 ```
 
 ### 2) GCP + Earth Engine Setup
+
 1. Create or select a GCP project.
 2. In Google Cloud Console, enable API for that project:
-   - `Earth Engine API` (required)
-   - `Cloud Resource Manager API` (optional, useful for some project/account metadata checks)
+  - `Earth Engine API` (required)
+  - `Cloud Resource Manager API` (optional, useful for some project/account metadata checks)
 3. Use this project ID as your `GEE_PROJECT_ID`.
 4. Authenticate Earth Engine from your machine:
+
 ```bash
 earthengine authenticate
 ```
 
 ### 3) Configure Environment
+
 Create root `.env` from `.env.example` and set:
+
 - `GEE_PROJECT_ID` (your GCP project ID)
 - `GEE_CREDENTIALS_DIR` (host path containing Earth Engine credentials)
 
 ### 4) Start Full Stack (Recommended)
+
 ```bash
 docker compose up --build
 ```
 
 This starts:
+
 - `postgis`, `mongo`
 - `db-migrate` (auto-applies `db/init/*.sql`)
 - `processor`, `api`, `frontend`
 
 ### 5) Access
+
 - Frontend: `http://localhost:5173`
 - API health: `http://localhost:4000/health`
 - Processor health: `http://localhost:8000/health`
 
 ### 6) Quick Commands (for daily use)
+
 ```bash
 # Start full stack
 docker compose up -d --build
@@ -164,7 +173,9 @@ npm run seed:ui-demo
 ```
 
 ## Milestones Ahead
+
 - Final dashboard polish for presentation-ready UX
 - Expand to additional official region boundaries (beyond current Ludhiana demo region)
 - Strengthen reliability with deeper automated tests (integration + negative paths)
 - Add CI + deployment hardening (required checks, build pipeline, runbook)
+

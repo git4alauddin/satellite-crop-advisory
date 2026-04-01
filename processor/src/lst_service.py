@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 import ee
-
 
 def get_modis_lst_collection(start_date: str, end_date: str, region: ee.Geometry) -> ee.ImageCollection:
     return (

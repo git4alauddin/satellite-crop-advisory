@@ -1,9 +1,7 @@
-﻿from fastapi import APIRouter
+﻿from src.services.stats_service import get_metric_stats_payload
 
-from src.services.stats_service import get_metric_stats_payload
-
+from fastapi import APIRouter
 router = APIRouter()
-
 
 @router.get("/stats/ndvi")
 def get_ndvi_stats(region_id: int, from_date: str | None = None, to_date: str | None = None):

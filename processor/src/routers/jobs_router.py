@@ -1,13 +1,10 @@
 ﻿from uuid import uuid4
-
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-
 from src.schemas.jobs import MetricJobRequest
 from src.services.job_store import METRIC_JOB_STORES, create_job_record
 from src.services.job_workers import run_lst_job_worker, run_ndvi_job_worker, run_ndwi_job_worker
 
 router = APIRouter()
-
 
 @router.post("/jobs/ndvi")
 def run_ndvi_job(payload: MetricJobRequest, background_tasks: BackgroundTasks):

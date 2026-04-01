@@ -1,9 +1,6 @@
 ﻿import json
-
 from fastapi import HTTPException
-
 from src.core.db import get_db_connection
-
 
 def get_region_geojson(region_id: int) -> dict:
     query = """

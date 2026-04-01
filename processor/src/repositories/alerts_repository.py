@@ -1,7 +1,5 @@
 ﻿import json
-
 from src.core.db import get_db_connection
-
 
 def upsert_alert(
     region_id: int,
