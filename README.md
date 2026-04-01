@@ -103,6 +103,13 @@ satellite-crop-advisory/
 | Validation & Reliability       | Field validation narrative, tests, CI/deployment hardening    | in-progress |
 
 
+## Current Dashboard (Draft)
+
+**Dashboard is currently in draft state and under active iteration.**
+
+![Dashboard Draft Preview](docs/images/dashboard-draft.png)
+
+
 ## Setup & Run
 
 ### Prerequisites
@@ -158,6 +165,12 @@ This starts:
 - API health: `http://localhost:4000/health`
 - Processor health: `http://localhost:8000/health`
 
+### API Docs
+
+- API Swagger UI: `http://localhost:4000/docs`
+- API OpenAPI JSON: `http://localhost:4000/openapi.json`
+- Processor Docs: `http://localhost:8000/docs`
+
 ### 6) Quick Commands (for daily use)
 
 ```bash
@@ -178,4 +191,3 @@ npm run seed:ui-demo
 - Expand to additional official region boundaries (beyond current Ludhiana demo region)
 - Strengthen reliability with deeper automated tests (integration + negative paths)
 - Add CI + deployment hardening (required checks, build pipeline, runbook)
-
