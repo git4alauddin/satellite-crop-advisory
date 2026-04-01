@@ -1,8 +1,14 @@
-# **Krishi Drishti**
+<h1 align="center">Krishi Drishti</h1>
 
+<p align="center"><em>Satellite-Based Crop Health & Resource Advisory System</em></p>
 
-
-*Satellite-Based Crop Health & Resource Advisory System*
+<p align="center">
+  <img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/Node.js%20%7C%20TypeScript-339933?logo=node.js&logoColor=white" alt="Node.js TypeScript" />
+  <img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/PostGIS-2F5D50?logo=postgresql&logoColor=white" alt="PostGIS" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker" />
+</p>
 
 ## Team
 
@@ -82,9 +88,16 @@ satellite-crop-advisory/
 |-- db/
 |   |-- init/                             # Ordered schema/migration SQL files (001..011)
 |   `-- tools/                            # Migration helper + GeoJSON import + demo seed utilities
+|-- docs/
+|   |-- README.md                         # Docs assets index/reference
+|   `-- images/
+|       `-- dashboard-draft.png           # Dashboard draft preview image used in README
 |-- package.json                          # Root helper scripts (for example: seed:ui-demo)
 |-- package-lock.json                     # Root lockfile
+|-- .env                                  # Local runtime environment values (developer machine)
 |-- .env.example                          # Root env template for Dockerized stack
+|-- .gitignore                            # Git ignore rules
+|-- .gitattributes                        # Git text/eol normalization rules
 |-- docker-compose.yml                    # Full local stack (PostGIS, Mongo, API, Processor, Frontend)
 `-- README.md                             # Project overview, progress, and runbook
 ```
@@ -94,13 +107,13 @@ satellite-crop-advisory/
 
 | Milestone Area                 | Scope                                                         | Status      |
 | ------------------------------ | ------------------------------------------------------------- | ----------- |
-| Data Ingestion & Preprocessing | Sentinel-2 + MODIS fetch, cloud filtering, region clipping    | done        |
-| Core Index Engine              | NDVI, NDWI, LST computation and persistence                   | done        |
-| Context Layer                  | Baseline lookup, anomaly calculation, severity classification | done        |
-| Temporal Intelligence          | Multi-window comparison and seasonal trend enhancement        | done        |
-| Advisory & Alerts              | Alert rules, alert storage, alert API, alert UI panel         | done        |
-| Dashboard Experience           | Consistent NDVI/NDWI/LST rendering and UX polish              | in-progress |
-| Validation & Reliability       | Field validation narrative, tests, CI/deployment hardening    | in-progress |
+| Data Ingestion & Preprocessing | Sentinel-2 + MODIS fetch, cloud filtering, region clipping    | ![done](https://img.shields.io/badge/done-22c55e) |
+| Core Index Engine              | NDVI, NDWI, LST computation and persistence                   | ![done](https://img.shields.io/badge/done-22c55e) |
+| Context Layer                  | Baseline lookup, anomaly calculation, severity classification | ![done](https://img.shields.io/badge/done-22c55e) |
+| Temporal Intelligence          | Multi-window comparison and seasonal trend enhancement        | ![done](https://img.shields.io/badge/done-22c55e) |
+| Advisory & Alerts              | Alert rules, alert storage, alert API, alert UI panel         | ![done](https://img.shields.io/badge/done-22c55e) |
+| Dashboard Experience           | Consistent NDVI/NDWI/LST rendering and UX polish              | ![in-progress](https://img.shields.io/badge/in--progress-f59e0b) |
+| Validation & Reliability       | Field validation narrative, tests, CI/deployment hardening    | ![in-progress](https://img.shields.io/badge/in--progress-f59e0b) |
 
 
 ## Current Dashboard (Draft)
